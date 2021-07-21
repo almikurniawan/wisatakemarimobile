@@ -1,7 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:toast/toast.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+
+import 'config/app.dart';
 
 class DetailObjek extends StatefulWidget {
   final int id;
@@ -13,8 +20,55 @@ class DetailObjek extends StatefulWidget {
 }
 
 class _DetailObjekState extends State<DetailObjek> {
+  dynamic dataObjek;
+  dynamic fasilitas;
+  List yt;
+  List sosialmedia;
+  Future<void> _launched;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    dataObjek = widget.data;
+    this.getData(); 
+  }
+
+  Future<void> getData() async{
+    var urlApi = Uri.https(Config().urlApi, '/public/api/show/'+dataObjek['id'].toString());
+
+    http.get(urlApi).then((http.Response response) {
+      if (response.statusCode == 401) {
+        // logout(context);
+      } else {
+        Map<String, dynamic> result = json.decode(response.body);
+        setState(() {
+          dataObjek = result['data'][0][0];
+          fasilitas = result['data'][1]['fasilitas'];
+          sosialmedia = result['data'][2]['sosialmedia'];
+          yt = result['data'][3]['youtube'];
+        });
+      }
+    }).onError((error, stackTrace) {
+      Toast.show(error.toString(), context);
+    });
+  }
+
+  Future<void> _launchInBrowser(String url) async {
+    if (await canLaunch(url)) {
+      await launch(
+        url,
+        universalLinksOnly: true,
+      );
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    print(fasilitas);
+    print(yt);
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -73,6 +127,22 @@ class _DetailObjekState extends State<DetailObjek> {
                       ),
                       Html(data : widget.data['deskripsi']),
                       Divider(),
+                      Text(
+                        "Informasi",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text("Alamat : "+dataObjek['alamat']),
+                      Text("Nomor Telepon : "+dataObjek['no_telp']),
+                      Text("Website  : "+dataObjek['website']),
+                      Divider(),
+                      Text(
+                        "Fasilitas",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Html(data : (fasilitas!=null) ? fasilitas : "-"),
+                      Divider(),
                       Row(
                         children: [
                           Icon(Icons.image),
@@ -111,7 +181,7 @@ class _DetailObjekState extends State<DetailObjek> {
                         height: 250,
                         child: FlutterMap(
                           options: MapOptions(
-                            center: LatLng(-7.812919, 112.014614),
+                            center: LatLng(double.parse(dataObjek['latitude']), double.parse(dataObjek['longitude'])),
                             zoom: 13.0,
                           ),
                           layers: [
@@ -124,7 +194,7 @@ class _DetailObjekState extends State<DetailObjek> {
                                 Marker(
                                   width: 80.0,
                                   height: 80.0,
-                                  point: LatLng(-7.812919, 112.014614),
+                                  point: LatLng(double.parse(dataObjek['latitude']), double.parse(dataObjek['longitude'])),
                                   builder: (ctx) => Container(
                                     child: Icon(Icons.place),
                                   ),
@@ -133,7 +203,54 @@ class _DetailObjekState extends State<DetailObjek> {
                             ),
                           ],
                         ),
-                      )
+                      ),
+                      MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: yt.length,
+                          itemBuilder: (context, index){
+                            return Html(data: '<iframe width="560" height="315" src="'+yt[index]['url']+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>');
+                          }
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: MediaQuery.removePadding(
+                          context: context,
+                          removeTop: true,
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+                            itemCount: sosialmedia.length,
+                            itemBuilder: (context, index){
+                              return Wrap(
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      icon: Icon(Icons.account_circle),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                        primary: Colors.red[300],
+                                        onPrimary: Colors.white,
+                                      ),
+                                      onPressed: () {
+                                        _launched = _launchInBrowser(sosialmedia[index]['url']);
+                                      },
+                                      label: Text(sosialmedia[index]['nama']),
+
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                          )
+                        ),
+                      ),
                     ],
                   ),
                 ),

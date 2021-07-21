@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 class SliderBanner extends StatefulWidget {
   final dynamic item;
-  const SliderBanner({ Key key, this.item }) : super(key: key);
+  final ValueSetter<dynamic> onTap;
+  const SliderBanner({ Key key, this.item, this.onTap }) : super(key: key);
 
   @override
   _SliderBannerState createState() => _SliderBannerState();
@@ -11,12 +12,14 @@ class _SliderBannerState extends State<SliderBanner> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 620,
+      height: 450,
       decoration: BoxDecoration(
         color: Colors.black87,
         image: DecorationImage(
           image: NetworkImage(
-              'https://wisatakemari.com/public/images/wilayah/kabupaten_magetan.jpeg'),
+            // widget.item['logo']
+            'https://wisatakemari.com/public/images/wilayah/20210719074355_2.jpg'
+          ),
           colorFilter: new ColorFilter.mode(
               Colors.black.withOpacity(0.6), BlendMode.dstATop),
           fit: BoxFit.cover,
@@ -30,12 +33,12 @@ class _SliderBannerState extends State<SliderBanner> {
             Stack(
               children: [
                 Container(
-                  height: 500,
+                  height: 400,
                   width: double.infinity,
-                  color: Colors.transparent,
+                  color: Colors.transparent
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 180, left: 30),
+                  padding: const EdgeInsets.only(top: 150, left: 30),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -50,6 +53,7 @@ class _SliderBannerState extends State<SliderBanner> {
                             style: TextStyle(color: Colors.white),
                           ),
                           onPressed: () {
+                            widget.onTap(widget.item);
                           },
                           style: ButtonStyle(
                               backgroundColor:

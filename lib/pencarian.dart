@@ -25,9 +25,9 @@ class _PencarianState extends State<Pencarian> {
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [];
   List objeks = [];
-  int selectedWilayah = 0;
-  int selectedKategori = 0;
-  String valueWilayahString = "";
+  int selectedWilayah;
+  int selectedKategori;
+  String valueWilayahString;
   bool collapseFilter = true;
   int currentPage = 1;
   int totalPage = 1;
@@ -100,25 +100,20 @@ class _PencarianState extends State<Pencarian> {
   Future<void> getObjek() async{
     Map<String, dynamic> queryString = new Map<String, dynamic>();
     queryString['page'] = currentPage.toString();
-
-    if(selectedWilayah>0){
-      queryString['wilayah-id'] = selectedWilayah.toString();
-    }
-
-    if(selectedKategori>0){
-      queryString['kategori-id_kategori[]'] = selectedKategori.toString();
-    }
-
-    queryString['search'] = searchController.text;
-    // queryString['search_by'] = "searching";
+    queryString['wilayah-id'] = 5.toString();
+    queryString['search_by'] = "searching";
+    String search = searchController.text+"."+valueWilayahString+"."+selectedKategori.toString();
+    queryString['search'] = search;
 
     var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    print(urlApi);
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
         // logout(context);
       }else{
         Map<String, dynamic> result = json.decode(response.body);
+        print(result);
         result['data']['data'].forEach((element){
           objeks.add(element);
         });
@@ -256,10 +251,12 @@ class _PencarianState extends State<Pencarian> {
                                       filled: true,
                                       fillColor: Colors.white,
                                       border: new OutlineInputBorder(
+                                        borderSide: BorderSide.none,
                                         borderRadius: const BorderRadius.all(
                                           const Radius.circular(10.0),
                                         ),
                                       ),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                                       suffixIcon: Icon(Icons.search)
                                     )
                                   ),
@@ -294,10 +291,12 @@ class _PencarianState extends State<Pencarian> {
                                     filled: true,
                                     fillColor: Colors.white,
                                     border: new OutlineInputBorder(
+                                      borderSide: BorderSide.none,
                                       borderRadius: const BorderRadius.all(
                                         const Radius.circular(10.0),
                                       ),
                                     ),
+                                    contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                                   ),
                                   value: selectedKategori,
                                   items: kategoris.map((dynamic item){

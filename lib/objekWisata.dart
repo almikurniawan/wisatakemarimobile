@@ -7,7 +7,9 @@ import 'config/app.dart';
 import 'detailObjek.dart';
 import 'objekWisataMap.dart';
 class ObjekWisata extends StatefulWidget {
-  const ObjekWisata({Key key}) : super(key: key);
+  final int idWilayah;
+  final String namaWilayah;
+  const ObjekWisata({Key key, this.idWilayah, this.namaWilayah}) : super(key: key);
 
   @override
   _ObjekWisataState createState() => _ObjekWisataState();
@@ -17,17 +19,20 @@ class _ObjekWisataState extends State<ObjekWisata> {
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [];
   List objeks = [];
-  int selectedWilayah = 0;
+  int selectedWilayah;
+  String selectedWilayahString;
   bool collapseFilter = false;
   int currentPage = 1;
   int totalPage = 1;
 
   @override
-  void initState() {
+  void initState(){
+    super.initState();
     this.getWilayah();
     this.getKategori();
+    selectedWilayah = widget.idWilayah;
+    selectedWilayahString = widget.namaWilayah;
     this.getObjek();
-    super.initState();
   }
 
   Future<void> getKategori() async{
@@ -75,19 +80,32 @@ class _ObjekWisataState extends State<ObjekWisata> {
   Future<void> getObjek() async{
     Map<String, dynamic> queryString = new Map<String, dynamic>();
     queryString['page'] = currentPage.toString();
+    bool search = false;
 
     if(selectedWilayah>0){
+      search = true;
       queryString['wilayah-id'] = selectedWilayah.toString();
     }
+
     List queryKategori = [];
     kategoris.forEach((element) {
       if(element['checked']){
         queryKategori.add(element['id'].toString());
       }
     });
-    queryString['kategori-id_kategori[]'] = queryKategori;    
-    
-    var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    if(queryKategori.length>0){
+      search = true;
+      queryString['kategori-id_kategori[]'] = queryKategori;    
+    }
+
+    var urlApi;
+    if(search){
+      queryString['search_by'] = "";
+      queryString['search'] = "";
+      urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    }else{
+      urlApi = Uri.https(Config().urlApi, '/public/api/wisata');
+    }
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){

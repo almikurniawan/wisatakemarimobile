@@ -13,6 +13,9 @@ import 'package:http/http.dart' as http;
 import 'package:toast/toast.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+import 'detailObjek.dart';
+import 'objekWisata.dart';
+
 GoogleSignIn _googleSignIn = GoogleSignIn(
   // Optional clientId
   // clientId: '479882132969-9i9aqik3jfjd7qhci1nqf0bm2g71rm1u.apps.googleusercontent.com',
@@ -33,28 +36,16 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent>{
   List<dynamic> populers = [
     {
-      "gambar": "202107140318150.97212400%201626232695_101.jpg",
-      "nama": "LOTUS GARDEN Hotel Kediri",
-      "deskripsi":
-          "Lotus Garden Hotel adalah tempat bermalam yang tepat bagi Anda yang berlibur bersama keluarga. Nikmati segala fasilitas hiburan untuk Anda dan keluarga. Lotus Garden Hotel memiliki segala fasilitas penunjang bisnis untuk Anda dan kolega. Jika Anda berniat menginap dalam jangka waktu yang lama, Lotus Garden Hotel adalah pilihan tepat."
-    },
-    {
-      "gambar": "202107131448240.44410600%201626187704_90.jpg",
-      "nama": "Parai beach",
-      "deskripsi":
-          "Lotus Garden Hotel adalah tempat bermalam yang tepat bagi Anda yang berlibur bersama keluarga. Nikmati segala fasilitas hiburan untuk Anda dan keluarga. Lotus Garden Hotel memiliki segala fasilitas penunjang bisnis untuk Anda dan kolega. Jika Anda berniat menginap dalam jangka waktu yang lama, Lotus Garden Hotel adalah pilihan tepat."
-    },
-    {
-      "gambar": "202107140222410.69786800%201626229361_96.jpeg",
-      "nama": "Kartika Hotel",
-      "deskripsi":
-          "Lotus Garden Hotel adalah tempat bermalam yang tepat bagi Anda yang berlibur bersama keluarga. Nikmati segala fasilitas hiburan untuk Anda dan keluarga. Lotus Garden Hotel memiliki segala fasilitas penunjang bisnis untuk Anda dan kolega. Jika Anda berniat menginap dalam jangka waktu yang lama, Lotus Garden Hotel adalah pilihan tepat."
+      "id":29,
+      "nama":"Grand Surya Hotel Kediri",
+      "gambar":null,
+      "deskripsi":"<p>Hotel simpel ini berjarak 13 menit berjalan kaki dari Taman Brantas, 5 km dari Kebun Bunga Matahari, dan 3 km dari Taman Wisata Tirtoyoso.</p>\r\n\r\n<p>Memiliki lantai keramik dan perabotan kayu, kamar-kamar simpel dilengkapi dengan Wi-Fi gratis, TV layar datar, serta fasilitas untuk membuat teh dan kopi. Suite memiliki area duduk.</p>\r\n\r\n<p>Sarapan dan minuman selamat datang gratis. Pilihan bersantap terdiri dari restoran, kafe, lounge koktail, dan bar jus. Fasilitas lainnya termasuk toko wine, kolam renang outdoor, dan gym. Ada juga spa, serta ruang pertemuan dan ruang acara.</p>",
     }
   ];
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [{
     "label" : "Kota Kediri",
-    "logo" : "kabupaten_magetang.jpg"
+    "logo" : "https://wisatakemari.com/public/images/wilayah/20210719074355_2.jpg"
   }];
   int selectedKategori = 0;
   int selectedWilayah = 0;
@@ -70,6 +61,7 @@ class _HomeContentState extends State<HomeContent>{
     super.initState();
     this.getKategori();
     this.getWilayah();
+    this.getPopuler();
     Firebase.initializeApp().whenComplete(() {
       this.checkLogin();
     });
@@ -140,6 +132,23 @@ class _HomeContentState extends State<HomeContent>{
     });
   }
 
+  Future<void> getPopuler() async{
+    var urlApi = Uri.https(Config().urlApi, '/public/api/wisata_rekomendasi');
+
+    http.get(urlApi).then((http.Response response) {
+      if (response.statusCode == 401) {
+        // logout(context);
+      } else {
+        dynamic result = json.decode(response.body);
+        setState(() {
+          populers = result['data'];
+        });
+      }
+    }).onError((error, stackTrace) {
+      Toast.show(error.toString(), context);
+    });
+  }
+
   Future<void> getKategori() async {
     var urlApi = Uri.https(Config().urlApi, '/public/api/kategori');
 
@@ -149,9 +158,12 @@ class _HomeContentState extends State<HomeContent>{
       } else {
         dynamic result = json.decode(response.body);
         dynamic tempKategori = [];
+        int index = 0;
         result['data'].forEach((element) {
           element['child'] = [];
           tempKategori.add(element);
+          this.getChildKategori(index, element['id_kategori'], element['nama_kategori']);
+          index++;
         });
         this.setState(() {
           kategoris = tempKategori;
@@ -159,6 +171,25 @@ class _HomeContentState extends State<HomeContent>{
       }
     }).onError((error, stackTrace) {
       Toast.show(error.toString(), context);
+    });
+  }
+
+  Future<void> getChildKategori(int index, int idKategori, String namaKategori) async{
+    Map<String, dynamic> queryString = new Map<String, dynamic>();
+    queryString['search_by'] = "kategori.nama_kategori";
+    queryString['search'] = namaKategori;
+    queryString['wilayah-id'] = 5.toString();
+
+    var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+
+    http.get(urlApi).then((http.Response response) {
+      if(response.statusCode==401){
+        // logout(context);
+      }else{
+        Map<String, dynamic> result = json.decode(response.body);
+        kategoris[index]['child'] = result['data']['data'];
+        setState(() {});
+      }
     });
   }
 
@@ -170,11 +201,12 @@ class _HomeContentState extends State<HomeContent>{
         // logout(context);
       } else {
         Map<String, dynamic> result = json.decode(response.body);
+        wilayahs = [];
         result['data'].forEach((value) {
           Map<String, dynamic> item = {
             'id': value['id'],
             'label': value['kabupaten'],
-            'logo': value['logo'],
+            'logo': value['gambar'],
           };
           return wilayahs.add(item);
         });
@@ -187,8 +219,6 @@ class _HomeContentState extends State<HomeContent>{
 
   @override
   Widget build(BuildContext context) {
-
-    // print(wilayahs);
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -241,13 +271,20 @@ class _HomeContentState extends State<HomeContent>{
           children: [
             CarouselSlider.builder(
               options: CarouselOptions(
-                height: 620,
+                height: 450,
                 viewportFraction: 1,
                 aspectRatio: 1,
               ),
               itemCount: wilayahs.length,
               itemBuilder: (context, index, realIdx){
-                return SliderBanner(item: wilayahs[index],);
+                return SliderBanner(
+                  item: wilayahs[index],
+                  onTap: (dynamic value){
+                    Navigator.push(context, MaterialPageRoute(builder: (context){
+                      return ObjekWisata(idWilayah: value['id'], namaWilayah: value['label'],);
+                    }));
+                  },
+                );
               }
             ),
             Padding(
@@ -268,6 +305,7 @@ class _HomeContentState extends State<HomeContent>{
                                 const Radius.circular(10.0),
                               ),
                             ),
+                            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                             suffixIcon: Icon(Icons.search))),
                   ),
                   Padding(
@@ -302,6 +340,7 @@ class _HomeContentState extends State<HomeContent>{
                             const Radius.circular(10.0),
                           ),
                         ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       ),
                       items: kategoris.map((dynamic item) {
                         return DropdownMenuItem(
@@ -322,7 +361,7 @@ class _HomeContentState extends State<HomeContent>{
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.all(20),
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                           primary: Colors.red[300],
                           onPrimary: Colors.white,
                         ),
@@ -332,7 +371,7 @@ class _HomeContentState extends State<HomeContent>{
                             return Pencarian(
                               selectedKategori: selectedKategori,
                               selectedWilayah: selectedWilayah,
-                              valueWilayahString: "",
+                              valueWilayahString: valueWilayahString,
                               search: searchController.text,
                             );
                           }));
@@ -378,6 +417,11 @@ class _HomeContentState extends State<HomeContent>{
                           width: MediaQuery.of(context).size.width * 0.8,
                           child: ItemObjek(
                             data: populers[index],
+                            onTap: (dynamic value){
+                               Navigator.push(context, MaterialPageRoute(builder: (context){
+                                return DetailObjek(id : value['id'], data : value);
+                              }));
+                            },
                           )
                     );
                   }
@@ -409,7 +453,6 @@ class _HomeContentState extends State<HomeContent>{
                   Container(
                     height: 500,
                     child: TabBarView(
-                      // physics: const NeverScrollableScrollPhysics(),
                       children: this.kontenKategori(),
                     ),
                   ),
@@ -445,11 +488,17 @@ class _HomeContentState extends State<HomeContent>{
             children: [
               Expanded(
                 child: ListView.builder(
-                    // physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    itemCount: wilayahs.length,
+                    itemCount: element['child'].length,
                     itemBuilder: (context, index) {
-                      return ListWilayah(item: wilayahs[index]);
+                      return ListWilayah(
+                        item: element['child'][index],
+                        onTap: (value){
+                          Navigator.push(context, MaterialPageRoute(builder: (context){
+                            return DetailObjek(id : value['id'], data : value);
+                          }));
+                        },
+                      );
                     }),
               ),
               Padding(

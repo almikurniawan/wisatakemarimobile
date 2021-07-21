@@ -7,6 +7,7 @@ import 'config/app.dart';
 import 'objekWisata.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'detailObjek.dart';
 
 class ObjekWisataMap extends StatefulWidget {
   const ObjekWisataMap({ Key key }) : super(key: key);
@@ -404,7 +405,9 @@ class _ObjekWisataMapState extends State<ObjekWisataMap> {
                     itemCount: objeks.length,
                     itemBuilder: (context, index){
                       return ItemObjek(data : objeks[index], onTap: (value){
-                        print(value);
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return DetailObjek(id : value['id'], data : value);
+                        }));
                       },);
                     }
                   ),

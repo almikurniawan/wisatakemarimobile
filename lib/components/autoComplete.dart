@@ -37,6 +37,7 @@ class _AutoCompleteComponentState extends State<AutoCompleteComponent> {
                 const Radius.circular(10.0),
               ),
             ),
+            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
             suffixIcon: widget.icon
           )
         );
