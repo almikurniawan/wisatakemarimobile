@@ -9,7 +9,8 @@ import 'objekWisataMap.dart';
 class ObjekWisata extends StatefulWidget {
   final int idWilayah;
   final String namaWilayah;
-  const ObjekWisata({Key key, this.idWilayah, this.namaWilayah}) : super(key: key);
+  final List<int> selectedKategori;
+  const ObjekWisata({Key key, this.idWilayah, this.namaWilayah, this.selectedKategori}) : super(key: key);
 
   @override
   _ObjekWisataState createState() => _ObjekWisataState();
@@ -29,25 +30,27 @@ class _ObjekWisataState extends State<ObjekWisata> {
   void initState(){
     super.initState();
     this.getWilayah();
-    this.getKategori();
-    selectedWilayah = widget.idWilayah;
-    selectedWilayahString = widget.namaWilayah;
-    this.getObjek();
+    this.getKategori(widget.selectedKategori).then((value) {
+      selectedWilayah = widget.idWilayah;
+      selectedWilayahString = widget.namaWilayah;
+      this.getObjek();
+    });
   }
 
-  Future<void> getKategori() async{
+  Future getKategori(List<int> selectedKategori) async{
     var urlApi = Uri.https(Config().urlApi, '/public/api/kategori');
 
-    http.get(urlApi).then((http.Response response) {
+    return http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
         // logout(context);
       }else{
         Map<String, dynamic> result = json.decode(response.body);
         result['data'].forEach((value) {
+          bool checked = (selectedKategori.contains(value['id_kategori']) ? true : false);
           Map<String, dynamic> item = {
             'id': value['id_kategori'],
             'label': value['nama_kategori'],
-            'checked' : false
+            'checked' : checked
           };
           return kategoris.add(item);
         });

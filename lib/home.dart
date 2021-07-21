@@ -35,7 +35,7 @@ class _HomeState extends State<Home> {
                           value = 0;
                         });
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return ObjekWisata(idWilayah: 0, namaWilayah: "",);
+                          return ObjekWisata(idWilayah: 0, namaWilayah: "", selectedKategori: [],);
                         }));
                       },
                       title: Text("Objek"),
@@ -73,7 +73,7 @@ class _HomeState extends State<Home> {
                           value = 0;
                         });
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return ObjekWisata(idWilayah: 0, namaWilayah:"");
+                          return ObjekWisata(idWilayah: 0, namaWilayah:"", selectedKategori: [],);
                         }));
                       },
                       title: Text("Objek"),

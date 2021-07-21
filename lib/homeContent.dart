@@ -140,8 +140,14 @@ class _HomeContentState extends State<HomeContent>{
         // logout(context);
       } else {
         dynamic result = json.decode(response.body);
-        setState(() {
-          populers = result['data'];
+        dynamic populers_temp = [];
+        result['data'].forEach((element){
+          populers_temp.add({
+            'id' : element['id_objek'],
+            'nama' : element['nama_objek'],
+            'deskripsi' : element['deskripsi'],
+            'gambar' : element['gambar']
+          });
         });
       }
     }).onError((error, stackTrace) {
@@ -503,10 +509,17 @@ class _HomeContentState extends State<HomeContent>{
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 15),
-                child: Text(
-                  "Tampilkan Semua",
-                  style: TextStyle(
-                      color: Colors.red[300], fontWeight: FontWeight.w600),
+                child: GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context){
+                      return ObjekWisata(idWilayah: 0, namaWilayah:"", selectedKategori: [element['id_kategori']],);
+                    }));
+                  },
+                  child: Text(
+                    "Tampilkan Semua",
+                    style: TextStyle(
+                        color: Colors.red[300], fontWeight: FontWeight.w600),
+                  ),
                 ),
               )
             ],

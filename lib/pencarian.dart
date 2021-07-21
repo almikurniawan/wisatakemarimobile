@@ -106,14 +106,12 @@ class _PencarianState extends State<Pencarian> {
     queryString['search'] = search;
 
     var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
-    print(urlApi);
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
         // logout(context);
       }else{
         Map<String, dynamic> result = json.decode(response.body);
-        print(result);
         result['data']['data'].forEach((element){
           objeks.add(element);
         });

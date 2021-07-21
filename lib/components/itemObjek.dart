@@ -26,7 +26,7 @@ class _ItemObjekState extends State<ItemObjek> {
           children: [
             (widget.data['gambar']!=null) ? 
             CachedNetworkImage(
-                imageUrl: 'https://wisatakemari.com/public/images/'+widget.data['gambar'],
+                imageUrl: widget.data['gambar'],
                 progressIndicatorBuilder: (context, url, downloadProgress){
                   return Container();
                 },

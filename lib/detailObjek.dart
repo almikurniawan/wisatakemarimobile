@@ -30,12 +30,11 @@ class _DetailObjekState extends State<DetailObjek> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    dataObjek = widget.data;
-    this.getData(); 
+    this.getData(widget.id);
   }
 
-  Future<void> getData() async{
-    var urlApi = Uri.https(Config().urlApi, '/public/api/show/'+dataObjek['id'].toString());
+  Future<void> getData(int id) async{
+    var urlApi = Uri.https(Config().urlApi, '/public/api/show/'+id.toString());
 
     http.get(urlApi).then((http.Response response) {
       if (response.statusCode == 401) {
@@ -67,8 +66,6 @@ class _DetailObjekState extends State<DetailObjek> {
 
   @override
   Widget build(BuildContext context) {
-    print(fasilitas);
-    print(yt);
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -93,10 +90,10 @@ class _DetailObjekState extends State<DetailObjek> {
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   image: DecorationImage(
-                    image: (widget.data['gambar'] != null)
+                    image: (dataObjek['gambar'] != null)
                         ? NetworkImage(
                             'http://wisatakemari.com/public/images/' +
-                                widget.data['gambar'])
+                                dataObjek['gambar'])
                         : AssetImage("assets/images/bg-1.jpg"),
                     colorFilter: new ColorFilter.mode(
                         Colors.black.withOpacity(0.3), BlendMode.dstATop),
@@ -107,7 +104,7 @@ class _DetailObjekState extends State<DetailObjek> {
                   padding: const EdgeInsets.only(top: 50),
                   child: Align(
                       alignment: Alignment.center,
-                      child: Text(widget.data['nama'],
+                      child: Text(dataObjek['nama'],
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -125,7 +122,7 @@ class _DetailObjekState extends State<DetailObjek> {
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      Html(data : widget.data['deskripsi']),
+                      Html(data : dataObjek['deskripsi']),
                       Divider(),
                       Text(
                         "Informasi",
@@ -160,9 +157,9 @@ class _DetailObjekState extends State<DetailObjek> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-                          itemCount: widget.data['objek_gambar'].length,
+                          itemCount: dataObjek['objek_gambar'].length,
                           itemBuilder: (context, index){
-                            return (widget.data['objek_gambar'][index]['gambar']!=null) ? Image(image: NetworkImage('http://wisatakemari.com/public/images/'+widget.data['objek_gambar'][index]['gambar'])) : Container();
+                            return (dataObjek['objek_gambar'][index]['gambar']!=null) ? Image(image: NetworkImage('http://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar'])) : Container();
                           }
                         ),
                       ),
@@ -204,6 +201,7 @@ class _DetailObjekState extends State<DetailObjek> {
                           ],
                         ),
                       ),
+                      (yt!=null) ? 
                       MediaQuery.removePadding(
                         context: context,
                         removeTop: true,
@@ -215,7 +213,7 @@ class _DetailObjekState extends State<DetailObjek> {
                             return Html(data: '<iframe width="560" height="315" src="'+yt[index]['url']+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>');
                           }
                         ),
-                      ),
+                      ) : Container(),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: MediaQuery.removePadding(

@@ -29,7 +29,7 @@ class _ListWilayahState extends State<ListWilayah> {
             child: 
             (widget.item['gambar']!=null) ? 
             CachedNetworkImage(
-              imageUrl: 'https://wisatakemari.com/public/images/'+widget.item['gambar'],
+              imageUrl: widget.item['gambar'],
               progressIndicatorBuilder: (context, url, downloadProgress){
                 return Container();
               },

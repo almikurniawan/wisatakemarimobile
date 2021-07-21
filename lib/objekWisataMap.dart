@@ -193,7 +193,7 @@ class _ObjekWisataMapState extends State<ObjekWisataMap> {
                         ),
                         onPressed: () {
                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                            return ObjekWisata();
+                            return ObjekWisata(idWilayah: 0, namaWilayah: "", selectedKategori: [],);
                           }));
                         },
                         child: Row(

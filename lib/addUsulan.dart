@@ -48,7 +48,6 @@ class _AddUsulanState extends State<AddUsulan> {
   }
 
   Future<void> usulkan() async{
-    print("usulkan");
     var urlApi = Uri.https(Config().urlApi, '/public/api/insert_usulan_objek');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String userId = await prefs.getString("id_user");
