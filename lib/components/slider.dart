@@ -18,7 +18,6 @@ class _SliderBannerState extends State<SliderBanner> {
         image: DecorationImage(
           image: NetworkImage(
             widget.item['logo']
-            // 'https://wisatakemari.com/public/images/wilayah/20210719074355_2.jpg'
           ),
           colorFilter: new ColorFilter.mode(
               Colors.black.withOpacity(0.6), BlendMode.dstATop),

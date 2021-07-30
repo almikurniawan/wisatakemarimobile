@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'dart:core';
 import 'package:html/parser.dart';
 
-class ItemObjek extends StatefulWidget {
+class ItemObjekPopuler extends StatefulWidget {
   final dynamic data;
   final ValueSetter<dynamic> onTap;
-  const ItemObjek({Key key, this.data, this.onTap}) : super(key: key);
+  const ItemObjekPopuler({Key key, this.data, this.onTap}) : super(key: key);
 
   @override
-  _ItemObjekState createState() => _ItemObjekState();
+  _ItemObjekPopulerState createState() => _ItemObjekPopulerState();
 }
 
-class _ItemObjekState extends State<ItemObjek> {
+class _ItemObjekPopulerState extends State<ItemObjekPopuler> {
   String _parseHtmlString(String htmlString) {
     final document = parse(htmlString);
     final String parsedString = parse(document.body.text).documentElement.text;
@@ -49,27 +49,14 @@ class _ItemObjekState extends State<ItemObjek> {
                       .substring(0, 100))
                   : Text(_parseHtmlString(widget.data['deskripsi'])),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.place, color: Colors.grey,),
-                  Text(widget.data['wilayah']['kabupaten']),
-                ],
+            Divider(),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(widget.data['dilihat']+" Dilihat"),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.category, color: Colors.grey,),
-                  Text(widget.data['kategori']['nama_kategori']),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-            )
           ],
         ),
       ),

@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:toast/toast.dart';
-
 import 'package:http/http.dart' as http;
 import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
 import 'config/app.dart';
 import 'detailObjek.dart';
-import 'objekWisataMap.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class Pencarian extends StatefulWidget {
   final int selectedWilayah;
@@ -32,9 +32,17 @@ class _PencarianState extends State<Pencarian> {
   int currentPage = 1;
   int totalPage = 1;
   TextEditingController searchController = TextEditingController();
+  int showMap = 0;
+  LatLng mapCenter = LatLng(-7.812919, 112.014614);
+  List<Marker> markers;
+  bool isLoading;
+  MapController mapControoler;
 
   @override
   void initState(){
+    markers = [];
+    mapControoler = MapController();
+    isLoading = true;
     selectedKategori = widget.selectedKategori;
     selectedWilayah = widget.selectedWilayah;
     valueWilayahString = widget.valueWilayahString;
@@ -89,23 +97,29 @@ class _PencarianState extends State<Pencarian> {
   void _reset(){
     setState(() {
       objeks = [];
+      markers = [];
       selectedWilayah = 0;
       selectedKategori = 0;
       searchController.text = "";
+      valueWilayahString = "";
       currentPage = 1;
     });
     this.getObjek();
   }
 
   Future<void> getObjek() async{
+    setState(() {
+      isLoading = true;
+    });
     Map<String, dynamic> queryString = new Map<String, dynamic>();
     queryString['page'] = currentPage.toString();
-    queryString['wilayah-id'] = 5.toString();
+    queryString['wilayah-id'] = selectedWilayah.toString();
     queryString['search_by'] = "searching";
     String search = searchController.text+"."+valueWilayahString+"."+selectedKategori.toString();
     queryString['search'] = search;
 
-    var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    Uri urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    print(urlApi);
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
@@ -114,11 +128,36 @@ class _PencarianState extends State<Pencarian> {
         Map<String, dynamic> result = json.decode(response.body);
         result['data']['data'].forEach((element){
           objeks.add(element);
+          if(element['latitude']!=null){
+            markers.add(
+              Marker(
+                width: 150,
+                height: 150,
+                point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
+                builder: (ctx) => Container(
+                  child: Icon(Icons.place, color: Colors.red,),
+                ),
+              )
+            );
+          }
         });
-        setState(() {
-          currentPage = result['data']['current_page']+1;
-          totalPage = result['data']['last_page'];
-        });
+
+        if(markers.length>=1){
+          setState(() {
+            currentPage = result['data']['current_page'] + 1;
+            totalPage = result['data']['last_page'];
+            isLoading = false;
+          });
+          if(showMap>0){
+            mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+          }
+        }else{
+          setState(() {
+            currentPage = result['data']['current_page']+1;
+            totalPage = result['data']['last_page'];
+            isLoading = false;
+          });
+        }
       }
     });
   }
@@ -128,7 +167,22 @@ class _PencarianState extends State<Pencarian> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("WISATAKEMARI", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("WISATA",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+            Icon(Icons.photo_camera, size: 20, color: Colors.white),
+            Text("KEMARI",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0.0,
         centerTitle: true,
@@ -178,14 +232,24 @@ class _PencarianState extends State<Pencarian> {
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                            return ObjekWisataMap();
-                          }));
+                          int show = (showMap == 1) ? 0 : 1;
+                          setState(() {
+                            showMap = show;
+                          });
+                          if(show>0){
+                            mapControoler.onReady.whenComplete((){
+                              if(objeks.isNotEmpty){
+                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+                              }
+                            });
+                          }
                         },
                         child: Row(
                           children: [
                             Icon(Icons.place, color: Colors.grey,),
-                            Text("View on mini map", style: TextStyle(color: Colors.grey),),
+                            Text((showMap == 1)
+                                  ? "Hide mini map"
+                                  : "View on mini map", style: TextStyle(color: Colors.grey),),
                           ],
                         ),
                       ),
@@ -196,17 +260,47 @@ class _PencarianState extends State<Pencarian> {
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
-
+                          int show = (showMap == 2) ? 0 : 2;
+                          setState(() {
+                            showMap = show;
+                          });
+                          if(show>0){
+                            mapControoler.onReady.whenComplete((){
+                              if(objeks.isNotEmpty){
+                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+                              }
+                            });
+                          }
                         },
                         child: Row(
                           children: [
                             Icon(Icons.place, color: Colors.grey,),
-                            Text("View on full map", style: TextStyle(color: Colors.grey),),
+                            Text((showMap==2) ? "Hide full map" : "View on full map", style: TextStyle(color: Colors.grey),),
                           ],
                         ),
                       )
                     ],
                   ),
+                ),
+              ),
+              Container(
+                height: (showMap > 0) ? (showMap == 1) ? 300 : 500 : 0,
+                child: FlutterMap(
+                  mapController: mapControoler,
+                  options: MapOptions(
+                    center: mapCenter,
+                    zoom: 13.0,
+                  ),
+                  layers: [
+                    TileLayerOptions(
+                        urlTemplate:
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        subdomains: ['a', 'b', 'c']),
+                    (markers.length>0) ? 
+                    MarkerLayerOptions(
+                      markers: markers
+                    ) : MarkerLayerOptions(),
+                  ],
                 ),
               ),
               Container(
@@ -270,11 +364,13 @@ class _PencarianState extends State<Pencarian> {
                                     onSelect: (selection) {
                                       setState(() {
                                         selectedWilayah = selection['id'];
+                                        valueWilayahString = selection['label'];
                                       });
                                     },
                                     onChange: (value) {
                                       setState(() {
                                         selectedWilayah = 0;
+                                        valueWilayahString = value;
                                       });
                                     }),
                                 ),
@@ -347,6 +443,7 @@ class _PencarianState extends State<Pencarian> {
                                       setState(() {
                                         currentPage = 1;
                                         objeks = [];
+                                        markers = [];
                                       });
                                       this.getObjek();
                                     },
@@ -391,7 +488,13 @@ class _PencarianState extends State<Pencarian> {
                   ),
                 ),
               ),
-
+              (isLoading) ? 
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: CircularProgressIndicator()),
+              ) : Container(),
               (currentPage>totalPage) ? Container() :
               Padding(
                 padding: const EdgeInsets.only(left: 15, right: 15, top: 8),

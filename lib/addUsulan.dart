@@ -80,11 +80,22 @@ class _AddUsulanState extends State<AddUsulan> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("WISATAKEMARI",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("WISATA",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+            Icon(Icons.photo_camera, size: 20, color: Colors.white),
+            Text("KEMARI",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         elevation: 1,
         centerTitle: true,

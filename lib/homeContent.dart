@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:wisatakemari/components/itemObjek.dart';
+import 'package:wisatakemari/components/itemObjekPopuler.dart';
 import 'package:wisatakemari/components/listWilayah.dart';
 import 'package:wisatakemari/components/slider.dart';
 import 'package:wisatakemari/pencarian.dart';
@@ -38,8 +39,9 @@ class _HomeContentState extends State<HomeContent>{
     {
       "id":29,
       "nama":"Grand Surya Hotel Kediri",
-      "gambar":null,
+      "url_gambar":null,
       "deskripsi":"<p>Hotel simpel ini berjarak 13 menit berjalan kaki dari Taman Brantas, 5 km dari Kebun Bunga Matahari, dan 3 km dari Taman Wisata Tirtoyoso.</p>\r\n\r\n<p>Memiliki lantai keramik dan perabotan kayu, kamar-kamar simpel dilengkapi dengan Wi-Fi gratis, TV layar datar, serta fasilitas untuk membuat teh dan kopi. Suite memiliki area duduk.</p>\r\n\r\n<p>Sarapan dan minuman selamat datang gratis. Pilihan bersantap terdiri dari restoran, kafe, lounge koktail, dan bar jus. Fasilitas lainnya termasuk toko wine, kolam renang outdoor, dan gym. Ada juga spa, serta ruang pertemuan dan ruang acara.</p>",
+      "dilihat" : "0"
     }
   ];
   List kategoris = [];
@@ -146,8 +148,12 @@ class _HomeContentState extends State<HomeContent>{
             'id' : element['id_objek'],
             'nama' : element['nama_objek'],
             'deskripsi' : element['deskripsi'],
-            'gambar' : element['gambar']
+            'url_gambar' : element['gambar'],
+            'dilihat' : element['dilihat']
           });
+        });
+        setState(() {
+          populers  = populers_temp;
         });
       }
     }).onError((error, stackTrace) {
@@ -240,11 +246,22 @@ class _HomeContentState extends State<HomeContent>{
                   },
                   color: Colors.white,
                 ),
-        title: Text("WISATAKEMARI",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("WISATA",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+            Icon(Icons.photo_camera, size: 20, color: Colors.white),
+            Text("KEMARI",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+          ],
+        ),
         actions: [
           (!isLogin)
             ? IconButton(
@@ -287,7 +304,7 @@ class _HomeContentState extends State<HomeContent>{
                   item: wilayahs[index],
                   onTap: (dynamic value){
                     Navigator.push(context, MaterialPageRoute(builder: (context){
-                      return ObjekWisata(idWilayah: value['id'], namaWilayah: value['label'],);
+                      return ObjekWisata(idWilayah: value['id'], namaWilayah: value['label'], selectedKategori : []);
                     }));
                   },
                 );
@@ -421,7 +438,7 @@ class _HomeContentState extends State<HomeContent>{
                   itemBuilder: (context, index, realIdx){
                     return Container(
                           width: MediaQuery.of(context).size.width * 0.8,
-                          child: ItemObjek(
+                          child: ItemObjekPopuler(
                             data: populers[index],
                             onTap: (dynamic value){
                                Navigator.push(context, MaterialPageRoute(builder: (context){
@@ -493,19 +510,26 @@ class _HomeContentState extends State<HomeContent>{
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: element['child'].length,
-                    itemBuilder: (context, index) {
-                      return ListWilayah(
-                        item: element['child'][index],
-                        onTap: (value){
-                          Navigator.push(context, MaterialPageRoute(builder: (context){
-                            return DetailObjek(id : value['id'], data : value);
-                          }));
-                        },
-                      );
-                    }),
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: element['child'].length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: ListWilayah(
+                            item: element['child'][index],
+                            onTap: (value){
+                              Navigator.push(context, MaterialPageRoute(builder: (context){
+                                return DetailObjek(id : value['id'], data : value);
+                              }));
+                            },
+                          ),
+                        );
+                      }),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 15),

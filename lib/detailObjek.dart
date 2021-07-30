@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,7 +6,6 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-
 import 'config/app.dart';
 
 class DetailObjek extends StatefulWidget {
@@ -25,11 +23,13 @@ class _DetailObjekState extends State<DetailObjek> {
   List yt;
   List sosialmedia;
   Future<void> _launched;
+  bool isLoading;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    isLoading = true;
     this.getData(widget.id);
   }
 
@@ -46,6 +46,7 @@ class _DetailObjekState extends State<DetailObjek> {
           fasilitas = result['data'][1]['fasilitas'];
           sosialmedia = result['data'][2]['sosialmedia'];
           yt = result['data'][3]['youtube'];
+          isLoading = false;
         });
       }
     }).onError((error, stackTrace) {
@@ -69,18 +70,41 @@ class _DetailObjekState extends State<DetailObjek> {
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: Text("WISATAKEMARI",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("WISATA",
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold)),
+              Icon(Icons.photo_camera, size: 20, color: Colors.white),
+              Text("KEMARI",
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold)),
+            ],
+          ),
           backgroundColor: Colors.transparent,
           elevation: 1,
           centerTitle: true,
         ),
         body: SingleChildScrollView(
             child: Container(
-                child: Column(
+                width: double.infinity,
+                child: 
+                (isLoading) ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 300),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ],
+                ) : 
+                Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.max,
                     children: [
@@ -90,10 +114,8 @@ class _DetailObjekState extends State<DetailObjek> {
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   image: DecorationImage(
-                    image: (dataObjek['gambar'] != null)
-                        ? NetworkImage(
-                            'http://wisatakemari.com/public/images/' +
-                                dataObjek['gambar'])
+                    image: (dataObjek['url_gambar'] != null)
+                        ? NetworkImage(dataObjek['url_gambar'])
                         : AssetImage("assets/images/bg-1.jpg"),
                     colorFilter: new ColorFilter.mode(
                         Colors.black.withOpacity(0.3), BlendMode.dstATop),
@@ -159,7 +181,7 @@ class _DetailObjekState extends State<DetailObjek> {
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
                           itemCount: dataObjek['objek_gambar'].length,
                           itemBuilder: (context, index){
-                            return (dataObjek['objek_gambar'][index]['gambar']!=null) ? Image(image: NetworkImage('http://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar'])) : Container();
+                            return (dataObjek['objek_gambar'][index]['gambar']!=null) ? Image(image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar'])) : Container();
                           }
                         ),
                       ),
@@ -186,6 +208,7 @@ class _DetailObjekState extends State<DetailObjek> {
                                 urlTemplate:
                                     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                                 subdomains: ['a', 'b', 'c']),
+                            (dataObjek['latitude']!=null && dataObjek['latitude']!="") ?
                             MarkerLayerOptions(
                               markers: [
                                 Marker(
@@ -197,7 +220,8 @@ class _DetailObjekState extends State<DetailObjek> {
                                   ),
                                 ),
                               ],
-                            ),
+                            ) :
+                            MarkerLayerOptions()
                           ],
                         ),
                       ),
@@ -225,25 +249,28 @@ class _DetailObjekState extends State<DetailObjek> {
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
                             itemCount: sosialmedia.length,
                             itemBuilder: (context, index){
-                              return Wrap(
-                                children: [
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      icon: Icon(Icons.account_circle),
-                                      style: ElevatedButton.styleFrom(
-                                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                                        primary: Colors.red[300],
-                                        onPrimary: Colors.white,
-                                      ),
-                                      onPressed: () {
-                                        _launched = _launchInBrowser(sosialmedia[index]['url']);
-                                      },
-                                      label: Text(sosialmedia[index]['nama']),
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Wrap(
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        icon: Icon(Icons.account_circle),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                          primary: Colors.red[300],
+                                          onPrimary: Colors.white,
+                                        ),
+                                        onPressed: () {
+                                          _launched = _launchInBrowser(sosialmedia[index]['url']);
+                                        },
+                                        label: Text(sosialmedia[index]['nama']),
 
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               );
                             }
                           )

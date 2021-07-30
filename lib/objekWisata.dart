@@ -5,12 +5,16 @@ import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
 import 'config/app.dart';
 import 'detailObjek.dart';
-import 'objekWisataMap.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
 class ObjekWisata extends StatefulWidget {
   final int idWilayah;
   final String namaWilayah;
   final List<int> selectedKategori;
-  const ObjekWisata({Key key, this.idWilayah, this.namaWilayah, this.selectedKategori}) : super(key: key);
+  const ObjekWisata(
+      {Key key, this.idWilayah, this.namaWilayah, this.selectedKategori})
+      : super(key: key);
 
   @override
   _ObjekWisataState createState() => _ObjekWisataState();
@@ -25,10 +29,18 @@ class _ObjekWisataState extends State<ObjekWisata> {
   bool collapseFilter = false;
   int currentPage = 1;
   int totalPage = 1;
+  int showMap = 0;
+  LatLng mapCenter = LatLng(-7.812919, 112.014614);
+  List<Marker> markers;
+  bool isLoading;
+  MapController mapControoler;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
+    markers = [];
+    mapControoler = MapController();
+    isLoading = true;
     this.getWilayah();
     this.getKategori(widget.selectedKategori).then((value) {
       selectedWilayah = widget.idWilayah;
@@ -37,20 +49,21 @@ class _ObjekWisataState extends State<ObjekWisata> {
     });
   }
 
-  Future getKategori(List<int> selectedKategori) async{
+  Future getKategori(List<int> selectedKategori) async {
     var urlApi = Uri.https(Config().urlApi, '/public/api/kategori');
 
     return http.get(urlApi).then((http.Response response) {
-      if(response.statusCode==401){
+      if (response.statusCode == 401) {
         // logout(context);
-      }else{
+      } else {
         Map<String, dynamic> result = json.decode(response.body);
         result['data'].forEach((value) {
-          bool checked = (selectedKategori.contains(value['id_kategori']) ? true : false);
+          bool checked =
+              (selectedKategori.contains(value['id_kategori']) ? true : false);
           Map<String, dynamic> item = {
             'id': value['id_kategori'],
             'label': value['nama_kategori'],
-            'checked' : checked
+            'checked': checked
           };
           return kategoris.add(item);
         });
@@ -59,13 +72,13 @@ class _ObjekWisataState extends State<ObjekWisata> {
     });
   }
 
-  Future<void> getWilayah() async{
+  Future<void> getWilayah() async {
     var urlApi = Uri.https(Config().urlApi, '/public/api/wilayah');
 
     http.get(urlApi).then((http.Response response) {
-      if(response.statusCode==401){
+      if (response.statusCode == 401) {
         // logout(context);
-      }else{
+      } else {
         Map<String, dynamic> result = json.decode(response.body);
         result['data'].forEach((value) {
           Map<String, dynamic> item = {
@@ -80,53 +93,86 @@ class _ObjekWisataState extends State<ObjekWisata> {
     });
   }
 
-  Future<void> getObjek() async{
+  Future<void> getObjek() async {
+    setState(() {
+      isLoading = true;
+    });
     Map<String, dynamic> queryString = new Map<String, dynamic>();
     queryString['page'] = currentPage.toString();
     bool search = false;
 
-    if(selectedWilayah>0){
+    if (selectedWilayah > 0) {
       search = true;
       queryString['wilayah-id'] = selectedWilayah.toString();
+    } else {
+      queryString['wilayah-id'] = 5.toString();
     }
 
     List queryKategori = [];
     kategoris.forEach((element) {
-      if(element['checked']){
+      if (element['checked']) {
         queryKategori.add(element['id'].toString());
       }
     });
-    if(queryKategori.length>0){
+    if (queryKategori.length > 0) {
       search = true;
-      queryString['kategori-id_kategori[]'] = queryKategori;    
+      queryString['kategori-id_kategori[]'] = queryKategori;
     }
 
-    var urlApi;
-    if(search){
+    if(search) {
       queryString['search_by'] = "";
       queryString['search'] = "";
-      urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
-    }else{
-      urlApi = Uri.https(Config().urlApi, '/public/api/wisata');
+    } else {
+      queryString['search_by'] = "";
+      queryString['search'] = "";
     }
+    Uri urlApi =
+        Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
 
     http.get(urlApi).then((http.Response response) {
-      if(response.statusCode==401){
+      if (response.statusCode == 401) {
         // logout(context);
-      }else{
+      } else {
         Map<String, dynamic> result = json.decode(response.body);
-        result['data']['data'].forEach((element){
-          objeks.add(element);
-        });
-        setState(() {
-          currentPage = result['data']['current_page']+1;
-          totalPage = result['data']['last_page'];
-        });
+        if(result['data'].length>0){
+          result['data']['data'].forEach((element) {
+            objeks.add(element);
+            if(element['latitude']!=null){
+              markers.add(
+                Marker(
+                  width: 150,
+                  height: 150,
+                  point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
+                  builder: (ctx) => Container(
+                    child: Icon(Icons.place, color: Colors.red,),
+                  ),
+                )
+              );
+            }
+          });
+
+          if(markers.length>=1){
+            setState(() {
+              currentPage = result['data']['current_page'] + 1;
+              totalPage = result['data']['last_page'];
+              isLoading = false;
+            });
+            if(showMap>0){
+              mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+            }
+          }else{
+            setState(() {
+              currentPage = result['data']['current_page'] + 1;
+              totalPage = result['data']['last_page'];
+              isLoading = false;
+            });
+          }
+        }
       }
     });
   }
 
-  void _reset(){
+  void _reset() {
     List<Map<String, dynamic>> kategoriNew = [];
     kategoris.forEach((element) {
       element['checked'] = false;
@@ -136,6 +182,7 @@ class _ObjekWisataState extends State<ObjekWisata> {
     setState(() {
       kategoris = kategoriNew;
       objeks = [];
+      markers = [];
       selectedWilayah = 0;
       currentPage = 1;
     });
@@ -147,15 +194,30 @@ class _ObjekWisataState extends State<ObjekWisata> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("WISATAKEMARI", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("WISATA",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+            Icon(Icons.photo_camera, size: 20, color: Colors.white),
+            Text("KEMARI",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         elevation: 1,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        child: Container(
-          color: Colors.grey[300],
-          child: Column(
+          child: Container(
+        color: Colors.grey[300],
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
             children: [
@@ -166,26 +228,27 @@ class _ObjekWisataState extends State<ObjekWisata> {
                   color: Colors.black87,
                   image: DecorationImage(
                     image: AssetImage("assets/images/bg-objek.jpg"),
-                    colorFilter: new ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.dstATop),
+                    colorFilter: new ColorFilter.mode(
+                        Colors.black.withOpacity(0.3), BlendMode.dstATop),
                     fit: BoxFit.cover,
                   ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 50),
                   child: Align(
-                    alignment: Alignment.center,
-                    child: Text("LIST OBJEK", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+                      alignment: Alignment.center,
+                      child: Text("LIST OBJEK",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold))),
                 ),
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey[300]
-                    )
-                  )
-                ),
+                    color: Colors.white,
+                    border:
+                        Border(bottom: BorderSide(color: Colors.grey[300]))),
                 child: Padding(
                   padding: const EdgeInsets.all(5),
                   child: Row(
@@ -197,35 +260,89 @@ class _ObjekWisataState extends State<ObjekWisata> {
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                            return ObjekWisataMap();
-                          }));
+                          int show = (showMap == 1) ? 0 : 1;
+                          setState(() {
+                            showMap = show;
+                          });
+                          if(show>0){
+                            mapControoler.onReady.whenComplete((){
+                              if(objeks.isNotEmpty){
+                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+                              }
+                            });
+                          }
                         },
                         child: Row(
                           children: [
-                            Icon(Icons.place, color: Colors.grey,),
-                            Text("View on mini map", style: TextStyle(color: Colors.grey),),
+                            Icon(
+                              Icons.place,
+                              color: Colors.grey,
+                            ),
+                            Text(
+                              (showMap == 1)
+                                  ? "Hide mini map"
+                                  : "View on mini map",
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       ),
-                      SizedBox(width: 10,),
+                      SizedBox(
+                        width: 10,
+                      ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           primary: Colors.white,
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
-
+                          int show = (showMap == 2) ? 0 : 2;
+                          setState(() {
+                            showMap = show;
+                          });
+                          if(show>0){
+                            mapControoler.onReady.whenComplete((){
+                              if(objeks.isNotEmpty){
+                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
+                              }
+                            });
+                          }
                         },
                         child: Row(
                           children: [
-                            Icon(Icons.place, color: Colors.grey,),
-                            Text("View on full map", style: TextStyle(color: Colors.grey),),
+                            Icon(
+                              Icons.place,
+                              color: Colors.grey,
+                            ),
+                            Text(
+                              (showMap==2) ? "Hide full map" : "View on full map",
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       )
                     ],
                   ),
+                ),
+              ),
+              Container(
+                height: (showMap > 0) ? (showMap == 1) ? 300 : 500 : 0,
+                child: FlutterMap(
+                  mapController: mapControoler,
+                  options: MapOptions(
+                    center: mapCenter,
+                    zoom: 13.0,
+                  ),
+                  layers: [
+                    TileLayerOptions(
+                        urlTemplate:
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        subdomains: ['a', 'b', 'c']),
+                    (markers.length>0) ? 
+                    MarkerLayerOptions(
+                      markers: markers
+                    ) : MarkerLayerOptions(),
+                  ],
                 ),
               ),
               Container(
@@ -241,131 +358,155 @@ class _ObjekWisataState extends State<ObjekWisata> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
-                              IconButton(icon: Icon(Icons.filter_alt_outlined), onPressed: (){
-                                setState(() {
-                                  collapseFilter = !collapseFilter;
-                                });
-                              }),
+                              Text("Filters",
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              IconButton(
+                                  icon: Icon(Icons.filter_alt_outlined),
+                                  onPressed: () {
+                                    setState(() {
+                                      collapseFilter = !collapseFilter;
+                                    });
+                                  }),
                             ],
                           ),
                           Divider(
                             color: Colors.grey[300],
                           ),
-                          (collapseFilter) ? 
-
-                          Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Kabupaten / Kota", style: TextStyle(fontWeight: FontWeight.w600)),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 5),
-                                  child: AutoCompleteComponent(
-                                    label: "Kemana?",
-                                    icon: Icon(Icons.place),
-                                    options: wilayahs,
-                                    onSelect: (selection) {
-                                      setState(() {
-                                        selectedWilayah = selection['id'];
-                                      });
-                                    },
-                                    onChange: (value) {
-                                      setState(() {
-                                        selectedWilayah = 0;
-                                      });
-                                    }),
-                                ),
-                                Divider(
-                                  color: Colors.grey[300],
-                                ),
-
-                                Text("Kategori", style: TextStyle(fontWeight: FontWeight.w600)),
-                                MediaQuery.removePadding(
-                                  context: context,
-                                  removeTop: true,
-                                  child: ListView.builder(
-                                    itemCount: kategoris.length,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    itemBuilder: (context, index){
-                                      return Row(
-                                        children: [
-                                          Checkbox(
-                                            checkColor: Colors.white,
-                                            activeColor : Colors.red,
-                                            // fillColor: MaterialStateProperty.resolveWith(getColor),
-                                            value: kategoris[index]['checked'],
-                                            onChanged: (bool value) {
+                          (collapseFilter)
+                              ? Container(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Kabupaten / Kota",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 5),
+                                        child: AutoCompleteComponent(
+                                            label: "Kemana?",
+                                            icon: Icon(Icons.place),
+                                            options: wilayahs,
+                                            onSelect: (selection) {
                                               setState(() {
-                                                kategoris[index]['checked'] = !kategoris[index]['checked'];
+                                                selectedWilayah =
+                                                    selection['id'];
                                               });
                                             },
-                                          ),
-                                          Text(kategoris[index]['label'])
-                                        ],
-                                      );
-                                    }
+                                            onChange: (value) {
+                                              setState(() {
+                                                selectedWilayah = 0;
+                                              });
+                                            }),
+                                      ),
+                                      Divider(
+                                        color: Colors.grey[300],
+                                      ),
+                                      Text("Kategori",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
+                                      MediaQuery.removePadding(
+                                        context: context,
+                                        removeTop: true,
+                                        child: ListView.builder(
+                                            itemCount: kategoris.length,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            shrinkWrap: true,
+                                            itemBuilder: (context, index) {
+                                              return Row(
+                                                children: [
+                                                  Checkbox(
+                                                    checkColor: Colors.white,
+                                                    activeColor: Colors.red,
+                                                    // fillColor: MaterialStateProperty.resolveWith(getColor),
+                                                    value: kategoris[index]
+                                                        ['checked'],
+                                                    onChanged: (bool value) {
+                                                      setState(() {
+                                                        kategoris[index]
+                                                                ['checked'] =
+                                                            !kategoris[index]
+                                                                ['checked'];
+                                                      });
+                                                    },
+                                                  ),
+                                                  Text(
+                                                      kategoris[index]['label'])
+                                                ],
+                                              );
+                                            }),
+                                      ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.refresh),
+                                                Text(
+                                                  "Reset",
+                                                  style: TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                            onPressed: () {
+                                              this._reset();
+                                            },
+                                            style: ButtonStyle(
+                                                backgroundColor:
+                                                    MaterialStateProperty.all<
+                                                        Color>(Colors.red[300]),
+                                                shape: MaterialStateProperty.all<
+                                                        RoundedRectangleBorder>(
+                                                    RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.0),
+                                                )))),
+                                      ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.filter_alt_outlined),
+                                                Text(
+                                                  "Filter",
+                                                  style: TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                            onPressed: () async {
+                                              setState(() {
+                                                currentPage = 1;
+                                                objeks = [];
+                                                markers = [];
+                                              });
+                                              this.getObjek();
+                                            },
+                                            style: ButtonStyle(
+                                                backgroundColor:
+                                                    MaterialStateProperty.all<
+                                                        Color>(Colors.blue),
+                                                shape: MaterialStateProperty.all<
+                                                        RoundedRectangleBorder>(
+                                                    RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.0),
+                                                )))),
+                                      ),
+                                    ],
                                   ),
-                                ),
-
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.refresh),
-                                        Text("Reset", style: TextStyle(color: Colors.white),),
-                                      ],
-                                    ),
-                                    onPressed: () {
-                                      this._reset();
-                                    },
-                                    style: ButtonStyle(
-                                      backgroundColor: MaterialStateProperty.all<Color>(Colors.red[300]),
-                                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                                        RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(5.0),
-                                        )
-                                      )
-                                    )
-                                  ),
-                                ),
-
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.filter_alt_outlined),
-                                        Text("Filter", style: TextStyle(color: Colors.white),),
-                                      ],
-                                    ),
-                                    onPressed: () async{
-                                      setState(() {
-                                        currentPage = 1;
-                                        objeks = [];
-                                      });
-                                      this.getObjek();
-                                    },
-                                    style: ButtonStyle(
-                                      backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
-                                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                                        RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(5.0),
-                                        )
-                                      )
-                                    )
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-
-                          : Container(),
-
+                                )
+                              : Container(),
                         ],
                       ),
                     ),
@@ -378,45 +519,57 @@ class _ObjekWisataState extends State<ObjekWisata> {
                   context: context,
                   removeTop: true,
                   child: ListView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: objeks.length,
-                    itemBuilder: (context, index){
-                      return ItemObjek(data : objeks[index], onTap: (value){
-                        Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return DetailObjek(id : value['id'], data : value);
-                        }));
-                      },);
-                    }
-                  ),
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: objeks.length,
+                      itemBuilder: (context, index) {
+                        return ItemObjek(
+                          data: objeks[index],
+                          onTap: (value) {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return DetailObjek(id: value['id'], data: value);
+                            }));
+                          },
+                        );
+                      }),
                 ),
               ),
-
-              (currentPage>totalPage) ? Container() :
+              (isLoading) ? 
               Padding(
-                padding: const EdgeInsets.only(left: 15, right: 15, top: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    child: Text("Load More", style: TextStyle(color: Colors.white),),
-                    onPressed: () {
-                      this.getObjek();
-                    },
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.red[300]),
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18.0),
-                        )
-                      )
-                    )
-                  ),
-                ),
-              ),
-            ]
-          ),
-        )
-      ),
+                padding: const EdgeInsets.all(8.0),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: CircularProgressIndicator()),
+              ) : Container(),
+              (currentPage > totalPage)
+                  ? Container()
+                  : Padding(
+                      padding:
+                          const EdgeInsets.only(left: 15, right: 15, top: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                            child: Text(
+                              "Load More",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onPressed: () {
+                              this.getObjek();
+                            },
+                            style: ButtonStyle(
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.red[300]),
+                                shape: MaterialStateProperty.all<
+                                        RoundedRectangleBorder>(
+                                    RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18.0),
+                                )))),
+                      ),
+                    ),
+            ]),
+      )),
     );
   }
 }

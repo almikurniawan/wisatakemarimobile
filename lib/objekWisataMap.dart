@@ -79,19 +79,32 @@ class _ObjekWisataMapState extends State<ObjekWisataMap> {
   Future<void> getObjek() async{
     Map<String, dynamic> queryString = new Map<String, dynamic>();
     queryString['page'] = currentPage.toString();
+    bool search = false;
 
     if(selectedWilayah>0){
+      search = true;
       queryString['wilayah-id'] = selectedWilayah.toString();
     }
+
     List queryKategori = [];
     kategoris.forEach((element) {
       if(element['checked']){
         queryKategori.add(element['id'].toString());
       }
     });
-    queryString['kategori-id_kategori[]'] = queryKategori;    
-    
-    var urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    if(queryKategori.length>0){
+      search = true;
+      queryString['kategori-id_kategori[]'] = queryKategori;    
+    }
+
+    var urlApi;
+    if(search){
+      queryString['search_by'] = "";
+      queryString['search'] = "";
+      urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
+    }else{
+      urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search');
+    }
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
@@ -142,7 +155,22 @@ class _ObjekWisataMapState extends State<ObjekWisataMap> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("WISATAKEMARI", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("WISATA",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+            Icon(Icons.photo_camera, size: 20, color: Colors.white),
+            Text("KEMARI",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0.0,
         centerTitle: true,
