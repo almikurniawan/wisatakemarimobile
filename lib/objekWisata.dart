@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:wisatakemari/components/itemObjekMapObjek.dart';
 import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
 import 'config/app.dart';
@@ -24,6 +25,9 @@ class _ObjekWisataState extends State<ObjekWisata> {
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [];
   List objeks = [];
+  List selectedRating;
+  List<Map<String, dynamic>> urutkans;
+  String selectedUrutan;
   int selectedWilayah;
   String selectedWilayahString;
   bool collapseFilter = false;
@@ -38,7 +42,40 @@ class _ObjekWisataState extends State<ObjekWisata> {
   @override
   void initState() {
     super.initState();
+    selectedWilayahString = "";
     markers = [];
+    selectedRating = [];
+    urutkans = [
+      {
+        "id" : "",
+        "label" : "--Pilih--"
+      },
+      {
+        "id" : "nama-ASC",
+        "label" : "Alphabet (A-Z)"
+      },
+      {
+        "id" : "nama-DESC",
+        "label" : "Alphabet (Z-A)"
+      },
+      {
+        "id" : "number-DESC",
+        "label" : "Paling Banyak Dilihat"
+      },
+      {
+        "id" : "number-ASC",
+        "label" : "Paling Sedikit Dilihat"
+      },
+      {
+        "id" : "rating-DESC",
+        "label" : "Penilaian Paling Tinggi"
+      },
+      {
+        "id" : "rating-ASC",
+        "label" : "Penilaian Paling Rendah"
+      }
+    ];
+    selectedUrutan = "";
     mapControoler = MapController();
     isLoading = true;
     this.getWilayah();
@@ -126,6 +163,17 @@ class _ObjekWisataState extends State<ObjekWisata> {
       queryString['search_by'] = "";
       queryString['search'] = "";
     }
+
+    if(selectedRating.length>0){
+      List<String> queryRating = [];
+      selectedRating.forEach((element) {
+        queryRating.add(element.toString());
+      });
+      queryString['wisata-rating[]'] = queryRating;
+    }
+
+    queryString['wisata-ordering'] = selectedUrutan;
+
     Uri urlApi =
         Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
 
@@ -143,8 +191,30 @@ class _ObjekWisataState extends State<ObjekWisata> {
                   width: 150,
                   height: 150,
                   point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
-                  builder: (ctx) => Container(
-                    child: Icon(Icons.place, color: Colors.red,),
+                  builder: (ctx) => GestureDetector(
+                    onTap: (){
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          contentPadding: const EdgeInsets.all(0),
+                          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 150),
+                          content: ItemObjekMapObjek(data: element, onDetail: (element){
+                            Navigator.push(context,
+                              MaterialPageRoute(builder: (context) {
+                                return DetailObjek(id: element['id'], data: element);
+                              }));
+                          },),
+                          actions: [
+                            IconButton(icon: Icon(Icons.close), onPressed: (){
+                              Navigator.pop(context, true);
+                            })
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      child: Icon(Icons.place, color: Colors.red,),
+                    ),
                   ),
                 )
               );
@@ -191,6 +261,22 @@ class _ObjekWisataState extends State<ObjekWisata> {
 
   @override
   Widget build(BuildContext context) {
+    String judul = "List Objek";
+    String kategoriSelected = "";
+    kategoris.forEach((element) {
+      if(element['checked']){
+        kategoriSelected = kategoriSelected + element['label']+", ";
+      }
+    });
+    if(kategoriSelected!=""){
+      kategoriSelected = "Kategori " + kategoriSelected ;
+    }
+    if(selectedWilayahString!=""){
+      kategoriSelected = kategoriSelected + "\nDi " + selectedWilayahString;
+    }
+    if(kategoriSelected!=""){
+      judul = kategoriSelected;
+    }
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -237,7 +323,8 @@ class _ObjekWisataState extends State<ObjekWisata> {
                   padding: const EdgeInsets.only(top: 50),
                   child: Align(
                       alignment: Alignment.center,
-                      child: Text("LIST OBJEK",
+                      child: Text(judul,
+                          maxLines: 4,
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -256,7 +343,7 @@ class _ObjekWisataState extends State<ObjekWisata> {
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.white,
+                          primary: Colors.red[300],
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
@@ -276,13 +363,13 @@ class _ObjekWisataState extends State<ObjekWisata> {
                           children: [
                             Icon(
                               Icons.place,
-                              color: Colors.grey,
+                              color: Colors.white,
                             ),
                             Text(
                               (showMap == 1)
                                   ? "Hide mini map"
                                   : "View on mini map",
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: Colors.white),
                             ),
                           ],
                         ),
@@ -292,7 +379,7 @@ class _ObjekWisataState extends State<ObjekWisata> {
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.white,
+                          primary: Colors.red[300],
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
@@ -312,11 +399,11 @@ class _ObjekWisataState extends State<ObjekWisata> {
                           children: [
                             Icon(
                               Icons.place,
-                              color: Colors.grey,
+                              color: Colors.white,
                             ),
                             Text(
                               (showMap==2) ? "Hide full map" : "View on full map",
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: Colors.white),
                             ),
                           ],
                         ),
@@ -437,6 +524,75 @@ class _ObjekWisataState extends State<ObjekWisata> {
                                                 ],
                                               );
                                             }),
+                                      ),
+                                      Text("Penilaian",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
+                                      MediaQuery.removePadding(
+                                        context: context,
+                                        removeTop: true,
+                                        child: ListView.builder(
+                                            itemCount: 5,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            shrinkWrap: true,
+                                            itemBuilder: (context, index) {
+                                              List<Widget> rating = [];
+                                              for(int i=5; i >= (index+1); i--){
+                                                rating.add(Icon(Icons.star, color: Colors.yellow[700],));
+                                              }
+                                              rating.add(Text("("+(5-index).toString()+"+)"));
+                                              return Row(
+                                                children: [
+                                                  Checkbox(
+                                                    checkColor: Colors.white,
+                                                    activeColor: Colors.red,
+                                                    // fillColor: MaterialStateProperty.resolveWith(getColor),
+                                                    value: selectedRating.contains((5-index)) ? true : false,
+                                                    onChanged: (bool value) {
+                                                      if(value){
+                                                        selectedRating.add((5-index));
+                                                      }else{
+                                                        selectedRating.remove((5-index));
+                                                      }
+                                                      setState(() {});
+                                                    },
+                                                  ),
+                                                  Row(
+                                                    children: rating,
+                                                  )
+                                                ],
+                                              );
+                                            }),
+                                      ),
+                                      Text("Urutkan",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
+                                      DropdownButtonFormField(
+                                        decoration: InputDecoration(
+                                          hintText: 'Urutkan',
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          border: new OutlineInputBorder(
+                                            borderSide: BorderSide.none,
+                                            borderRadius: const BorderRadius.all(
+                                              const Radius.circular(10.0),
+                                            ),
+                                          ),
+                                          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                        ),
+                                        value: selectedUrutan,
+                                        items: urutkans.map((Map<String, dynamic> item) {
+                                          return DropdownMenuItem(
+                                            value: item['id'],
+                                            child: Text(item['label']),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selectedUrutan = value;
+                                          });
+                                        },
                                       ),
                                       SizedBox(
                                         width: double.infinity,

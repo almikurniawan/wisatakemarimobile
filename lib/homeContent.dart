@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:wisatakemari/components/itemObjek.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:wisatakemari/components/itemObjekMap.dart';
 import 'package:wisatakemari/components/itemObjekPopuler.dart';
 import 'package:wisatakemari/components/listWilayah.dart';
 import 'package:wisatakemari/components/slider.dart';
-import 'package:wisatakemari/pencarian.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wisatakemari/pencarian.dart';
 import 'components/autoComplete.dart';
 import 'config/app.dart';
 import 'package:flutter/material.dart';
@@ -41,14 +43,15 @@ class _HomeContentState extends State<HomeContent>{
       "nama":"Grand Surya Hotel Kediri",
       "url_gambar":null,
       "deskripsi":"<p>Hotel simpel ini berjarak 13 menit berjalan kaki dari Taman Brantas, 5 km dari Kebun Bunga Matahari, dan 3 km dari Taman Wisata Tirtoyoso.</p>\r\n\r\n<p>Memiliki lantai keramik dan perabotan kayu, kamar-kamar simpel dilengkapi dengan Wi-Fi gratis, TV layar datar, serta fasilitas untuk membuat teh dan kopi. Suite memiliki area duduk.</p>\r\n\r\n<p>Sarapan dan minuman selamat datang gratis. Pilihan bersantap terdiri dari restoran, kafe, lounge koktail, dan bar jus. Fasilitas lainnya termasuk toko wine, kolam renang outdoor, dan gym. Ada juga spa, serta ruang pertemuan dan ruang acara.</p>",
-      "dilihat" : "0"
+      "dilihat" : "0",
+      "wilayah" : "Kediri"
     }
   ];
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [{
     "label" : "Kota Kediri",
     "logo" : "https://wisatakemari.com/public/images/wilayah/20210719074355_2.jpg"
-  }];
+  }];  
   int selectedKategori = 0;
   int selectedWilayah = 0;
   String valueWilayahString = "";
@@ -57,13 +60,22 @@ class _HomeContentState extends State<HomeContent>{
   bool isLogin = false;
   String nama = "";
   TextEditingController searchController = TextEditingController();
+  int showMap = 0;
+  LatLng mapCenter = LatLng(-7.812919, 112.014614);
+  List<Marker> markers;
+  bool isLoading;
+  MapController mapControoler;
+  List<dynamic> objeksAll;
 
   @override
   void initState() {
     super.initState();
+    markers = [];
+    objeksAll = [];
     this.getKategori();
     this.getWilayah();
     this.getPopuler();
+    this.getObjekAll();
     Firebase.initializeApp().whenComplete(() {
       this.checkLogin();
     });
@@ -149,7 +161,8 @@ class _HomeContentState extends State<HomeContent>{
             'nama' : element['nama_objek'],
             'deskripsi' : element['deskripsi'],
             'url_gambar' : element['gambar'],
-            'dilihat' : element['dilihat']
+            'dilihat' : element['dilihat'],
+            'wilayah' : element['nama_wilayah']
           });
         });
         setState(() {
@@ -159,6 +172,88 @@ class _HomeContentState extends State<HomeContent>{
     }).onError((error, stackTrace) {
       Toast.show(error.toString(), context);
     });
+  }
+
+  Future<void> getObjekAll() async{
+    markers = [];
+    objeksAll = [];
+    setState(() {});
+    var urlApi = Uri.https(Config().urlApi, '/api/wisata_all_android');
+
+    http.get(urlApi).then((http.Response response) {
+      if (response.statusCode == 401) {
+        // logout(context);
+      } else {
+        dynamic result = json.decode(response.body);
+        int index=0;
+
+        result['data'].forEach((element){
+          if(element['latitude']!='' && element['latitude']!=null){
+            // print(" index "+index.toString());
+            objeksAll.add(element);
+            markers.add(
+              Marker(
+                width: 150,
+                height: 150,
+                point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
+                builder: (ctx) => GestureDetector(
+                  onTap: (){
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        contentPadding: const EdgeInsets.all(0),
+                        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 150),
+                        content: ItemObjekMap(data: element, onDetail: (element){
+                          Navigator.push(context,
+                            MaterialPageRoute(builder: (context) {
+                              return DetailObjek(id: element['id'], data: element);
+                            }));
+                        },),
+                        actions: [
+                          IconButton(icon: Icon(Icons.close), onPressed: (){
+                            Navigator.pop(context, true);
+                          })
+                        ],
+                      ),
+                    );
+                  },
+                  child: Container(
+                    child: Icon(Icons.place, color: Colors.red,),
+                  ),
+                ),
+              )
+            );
+
+            index++;
+          }
+        });
+        setState(() {});
+      }
+    }).onError((error, stackTrace) {
+      // Toast.show(error.toString(), context);
+    });
+  }
+
+  Marker markerComponent(int index, dynamic element){
+    return 
+    Marker(
+      width: 150,
+      height: 150,
+      point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
+      builder: (ctx) => GestureDetector(
+        onTap: (){
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              content: Text(element['nama'],),
+            ),
+          );
+        },
+        child: Container(
+          child: Icon(Icons.place, color: Colors.red,),
+        ),
+      ),
+    );
   }
 
   Future<void> getKategori() async {
@@ -182,7 +277,7 @@ class _HomeContentState extends State<HomeContent>{
         });
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      // Toast.show(error.toString(), context);
     });
   }
 
@@ -225,12 +320,13 @@ class _HomeContentState extends State<HomeContent>{
         setState(() {});
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      // Toast.show(error.toString(), context);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // print(objeksAll);
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -297,6 +393,10 @@ class _HomeContentState extends State<HomeContent>{
                 height: 450,
                 viewportFraction: 1,
                 aspectRatio: 1,
+                autoPlay: true,
+                autoPlayInterval: Duration(seconds: 5),
+                autoPlayAnimationDuration: Duration(milliseconds: 800),
+                autoPlayCurve: Curves.fastOutSlowIn,
               ),
               itemCount: wilayahs.length,
               itemBuilder: (context, index, realIdx){
@@ -309,6 +409,93 @@ class _HomeContentState extends State<HomeContent>{
                   },
                 );
               }
+            ),
+            Container(
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  border:
+                      Border(bottom: BorderSide(color: Colors.grey[300]))),
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.red[300],
+                        onPrimary: Colors.white,
+                      ),
+                      onPressed: () {
+                        int show = (showMap == 1) ? 0 : 1;
+                        setState(() {
+                          showMap = show;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.place,
+                            color: Colors.white,
+                          ),
+                          Text(
+                            (showMap == 1)
+                                ? "Hide mini map"
+                                : "View on mini map",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.red[300],
+                        onPrimary: Colors.white,
+                      ),
+                      onPressed: () {
+                        int show = (showMap == 2) ? 0 : 2;
+                        setState(() {
+                          showMap = show;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.place,
+                            color: Colors.white,
+                          ),
+                          Text(
+                            (showMap==2) ? "Hide full map" : "View on full map",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              height: (showMap > 0) ? (showMap == 1) ? 300 : 500 : 0,
+              child: FlutterMap(
+                mapController: mapControoler,
+                options: MapOptions(
+                  center: mapCenter,
+                  zoom: 16.0,
+                ),
+                layers: [
+                  TileLayerOptions(
+                      urlTemplate:
+                          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      subdomains: ['a', 'b', 'c']),
+                  (markers.length>0) ? 
+                  MarkerLayerOptions(
+                    markers: markers
+                  ) : MarkerLayerOptions(),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(20),
@@ -389,6 +576,7 @@ class _HomeContentState extends State<HomeContent>{
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
+                          // this.getObjekAll();
                           Navigator.push(context,
                               MaterialPageRoute(builder: (context) {
                             return Pencarian(

@@ -4,6 +4,7 @@ import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
+import 'components/itemObjekMapObjek.dart';
 import 'config/app.dart';
 import 'detailObjek.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -25,6 +26,9 @@ class _PencarianState extends State<Pencarian> {
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [];
   List objeks = [];
+  List selectedRating;
+  List<Map<String, dynamic>> urutkans;
+  String selectedUrutan;
   int selectedWilayah;
   int selectedKategori;
   String valueWilayahString;
@@ -41,6 +45,38 @@ class _PencarianState extends State<Pencarian> {
   @override
   void initState(){
     markers = [];
+    selectedRating = [];
+    urutkans = [
+      {
+        "id" : "",
+        "label" : "--Pilih--"
+      },
+      {
+        "id" : "nama-ASC",
+        "label" : "Alphabet (A-Z)"
+      },
+      {
+        "id" : "nama-DESC",
+        "label" : "Alphabet (Z-A)"
+      },
+      {
+        "id" : "number-DESC",
+        "label" : "Paling Banyak Dilihat"
+      },
+      {
+        "id" : "number-ASC",
+        "label" : "Paling Sedikit Dilihat"
+      },
+      {
+        "id" : "rating-DESC",
+        "label" : "Penilaian Paling Tinggi"
+      },
+      {
+        "id" : "rating-ASC",
+        "label" : "Penilaian Paling Rendah"
+      }
+    ];
+    selectedUrutan = "";
     mapControoler = MapController();
     isLoading = true;
     selectedKategori = widget.selectedKategori;
@@ -118,8 +154,18 @@ class _PencarianState extends State<Pencarian> {
     String search = searchController.text+"."+valueWilayahString+"."+selectedKategori.toString();
     queryString['search'] = search;
 
+    if(selectedRating.length>0){
+      List<String> queryRating = [];
+      selectedRating.forEach((element) {
+        queryRating.add(element.toString());
+      });
+      queryString['wisata-rating[]'] = queryRating;
+    }
+
+    queryString['wisata-ordering'] = selectedUrutan;
+
     Uri urlApi = Uri.https(Config().urlApi, '/public/api/wisata/search', queryString);
-    print(urlApi);
+  
 
     http.get(urlApi).then((http.Response response) {
       if(response.statusCode==401){
@@ -134,8 +180,30 @@ class _PencarianState extends State<Pencarian> {
                 width: 150,
                 height: 150,
                 point: LatLng(double.parse(element['latitude']), double.parse(element['longitude'])),
-                builder: (ctx) => Container(
-                  child: Icon(Icons.place, color: Colors.red,),
+                builder: (ctx) => GestureDetector(
+                  onTap: (){
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        contentPadding: const EdgeInsets.all(0),
+                        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 150),
+                        content: ItemObjekMapObjek(data: element, onDetail: (element){
+                          Navigator.push(context,
+                            MaterialPageRoute(builder: (context) {
+                              return DetailObjek(id: element['id'], data: element);
+                            }));
+                        },),
+                        actions: [
+                          IconButton(icon: Icon(Icons.close), onPressed: (){
+                            Navigator.pop(context, true);
+                          })
+                        ],
+                      ),
+                    );
+                  },
+                  child: Container(
+                    child: Icon(Icons.place, color: Colors.red,),
+                  ),
                 ),
               )
             );
@@ -402,6 +470,74 @@ class _PencarianState extends State<Pencarian> {
                                   onChanged: (value) {
                                     setState(() {
                                       selectedKategori = value;
+                                    });
+                                  },
+                                ),
+                                Text("Penilaian",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                MediaQuery.removePadding(
+                                  context: context,
+                                  removeTop: true,
+                                  child: ListView.builder(
+                                      itemCount: 5,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      shrinkWrap: true,
+                                      itemBuilder: (context, index) {
+                                        List<Widget> rating = [];
+                                        for(int i=5; i >= (index+1); i--){
+                                          rating.add(Icon(Icons.star, color: Colors.yellow[700],));
+                                        }
+                                        rating.add(Text("("+(5-index).toString()+"+)"));
+                                        return Row(
+                                          children: [
+                                            Checkbox(
+                                              checkColor: Colors.white,
+                                              activeColor: Colors.red,
+                                              value: selectedRating.contains((5-index)) ? true : false,
+                                              onChanged: (bool value) {
+                                                if(value){
+                                                  selectedRating.add((5-index));
+                                                }else{
+                                                  selectedRating.remove((5-index));
+                                                }
+                                                setState(() {});
+                                              },
+                                            ),
+                                            Row(
+                                              children: rating,
+                                            )
+                                          ],
+                                        );
+                                      }),
+                                ),
+                                Text("Urutkan",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                DropdownButtonFormField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Urutkan',
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    border: new OutlineInputBorder(
+                                      borderSide: BorderSide.none,
+                                      borderRadius: const BorderRadius.all(
+                                        const Radius.circular(10.0),
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                  ),
+                                  value: selectedUrutan,
+                                  items: urutkans.map((Map<String, dynamic> item) {
+                                    return DropdownMenuItem(
+                                      value: item['id'],
+                                      child: Text(item['label']),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedUrutan = value;
                                     });
                                   },
                                 ),

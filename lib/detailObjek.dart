@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import "package:intl/intl.dart";
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -22,6 +23,7 @@ class _DetailObjekState extends State<DetailObjek> {
   dynamic fasilitas;
   List yt;
   List sosialmedia;
+  List produk;
   Future<void> _launched;
   bool isLoading;
 
@@ -46,6 +48,7 @@ class _DetailObjekState extends State<DetailObjek> {
           fasilitas = result['data'][1]['fasilitas'];
           sosialmedia = result['data'][2]['sosialmedia'];
           yt = result['data'][3]['youtube'];
+          produk = result['data'][4]['produk'];
           isLoading = false;
         });
       }
@@ -67,6 +70,23 @@ class _DetailObjekState extends State<DetailObjek> {
 
   @override
   Widget build(BuildContext context) {
+    var points = <LatLng>[
+      LatLng(-7.812919, 112.014614),
+      LatLng(-7.502919, 112.204614),
+      LatLng(-7.302919, 112.404614),
+    ];
+
+    List<Icon> rating = [];
+    if(!isLoading){
+      for(int i=1; i <= 5; i++){
+        if(dataObjek['rating'].floor()>=i){
+          rating.add(Icon(Icons.star, color: Colors.yellow[700], size: 18,));
+        }else{
+          rating.add(Icon(Icons.star, size: 18));
+        }
+      }
+    }
+    NumberFormat curency = new NumberFormat.currency(locale: "id_ID", symbol: "Rp. ");
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -109,7 +129,6 @@ class _DetailObjekState extends State<DetailObjek> {
                     mainAxisSize: MainAxisSize.max,
                     children: [
               Container(
-                height: 500,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.black87,
@@ -123,14 +142,135 @@ class _DetailObjekState extends State<DetailObjek> {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Align(
-                      alignment: Alignment.center,
-                      child: Text(dataObjek['nama'],
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Column(
+                    children: [
+                      Text(dataObjek['nama'],
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
-                              fontWeight: FontWeight.bold))),
+                              fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Row(
+                                children: rating,
+                              ),
+                              (dataObjek['rating'].floor()>=4) ? Text("Sangat Baik", style: TextStyle(color: Colors.white)) : Text("Baik", style: TextStyle(color: Colors.white))
+                            ],
+                          ),
+                          Container(
+                            color: Colors.blue,
+                            padding:const EdgeInsets.all(8),
+                            child: Text(dataObjek['rating'].toString(), style: TextStyle(color: Colors.white),),
+                          )
+                        ],
+                      ),
+                      MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: GridView.builder(
+                          padding: EdgeInsets.only(bottom: 10),
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 4),
+                          itemCount: sosialmedia.length,
+                          itemBuilder: (context, index){
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Wrap(
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      icon: Icon(Icons.account_circle),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                        primary: Colors.transparent,
+                                        onPrimary: Colors.white,
+                                        side: BorderSide(color: Colors.red, width: 1),
+                                        elevation: 1,
+                                        shape: RoundedRectangleBorder( //to set border radius to button
+                                            borderRadius: BorderRadius.circular(30)
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        _launched = _launchInBrowser(sosialmedia[index]['url']);
+                                      },
+                                      label: Text(sosialmedia[index]['nama']),
+
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                          primary: Colors.transparent,
+                          onPrimary: Colors.white,
+                          side: BorderSide(color: Colors.red, width: 1),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder( //to set border radius to button
+                              borderRadius: BorderRadius.circular(30)
+                          ),
+                        ),
+                        onPressed: () {
+                        },
+                        child: Text("Objek Terdekat"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                          primary: Colors.transparent,
+                          onPrimary: Colors.white,
+                          side: BorderSide(color: Colors.red, width: 1),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder( //to set border radius to button
+                              borderRadius: BorderRadius.circular(30)
+                          ),
+                        ),
+                        onPressed: () {
+                        },
+                        child: Text("Rute ke Lokasi"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                          primary: Colors.transparent,
+                          onPrimary: Colors.white,
+                          side: BorderSide(color: Colors.red, width: 1),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder( //to set border radius to button
+                              borderRadius: BorderRadius.circular(30)
+                          ),
+                        ),
+                        onPressed: () {
+                        },
+                        child: Text("Penawaran Kami"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                          primary: Colors.transparent,
+                          onPrimary: Colors.white,
+                          side: BorderSide(color: Colors.red, width: 1),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder( //to set border radius to button
+                              borderRadius: BorderRadius.circular(30)
+                          ),
+                        ),
+                        onPressed: () {
+                        },
+                        child: Text("Range Biaya"),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -181,7 +321,32 @@ class _DetailObjekState extends State<DetailObjek> {
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
                           itemCount: dataObjek['objek_gambar'].length,
                           itemBuilder: (context, index){
-                            return (dataObjek['objek_gambar'][index]['gambar']!=null) ? Image(image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar'])) : Container();
+                            return (dataObjek['objek_gambar'][index]['gambar']!=null) ? 
+                            GestureDetector(
+                              onTap: (){
+                                showDialog(context: context, builder: (context){
+                                  return AlertDialog(
+                                    contentPadding: const EdgeInsets.all(0),
+                                    content: InteractiveViewer(
+                                      panEnabled: true, // Set it to false to prevent panning. 
+                                      boundaryMargin: EdgeInsets.all(80),
+                                      minScale: 0.5,
+                                      maxScale: 4, 
+                                      child: Image(
+                                        image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
+                                        ),
+                                      ),
+                                    )
+                                  );
+                                });
+                              },
+                              child: Image(
+                                image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
+                                ),
+                              ),
+                            ) 
+                            : 
+                            Container();
                           }
                         ),
                       ),
@@ -221,10 +386,89 @@ class _DetailObjekState extends State<DetailObjek> {
                                 ),
                               ],
                             ) :
-                            MarkerLayerOptions()
+                            MarkerLayerOptions(),
+                            PolylineLayerOptions(
+                              polylines: [
+                                Polyline(
+                                    points: points,
+                                    strokeWidth: 4.0,
+                                    color: Colors.purple),
+                              ],
+                            ),
                           ],
                         ),
                       ),
+                      Divider(),
+                      Row(
+                        children: [
+                          Icon(Icons.place),
+                          Text(
+                            "Produk",
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: produk.length,
+                          itemBuilder: (context, index){
+                            return GestureDetector(
+                              onTap: (){
+                                showDialog(context: context, builder: (context){
+                                  return AlertDialog(
+                                    title: Text(produk[index]['nama'], style: TextStyle(fontWeight: FontWeight.bold)),
+                                    content: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Html(data: (produk[index]['deskripsi']!=null ? produk[index]['deskripsi'] : "-"), shrinkWrap: true,),
+                                          Text(curency.format(produk[index]['harga']), style: TextStyle(color: Colors.red[300], fontWeight: FontWeight.bold,)),
+                                          Image(
+                                            image: NetworkImage(
+                                              produk[index]['url_gambar']
+                                              // 'https://wisatakemari.com/public/images/produk/deluxe1.jpg'
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  );
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Row(
+                                  children: [
+                                    Image(
+                                      width: MediaQuery.of(context).size.width * 0.3,
+                                      image: NetworkImage(
+                                        produk[index]['url_gambar']
+                                        // 'https://wisatakemari.com/public/images/produk/deluxe1.jpg'
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          Text(produk[index]['nama'], style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold )),
+                                          Text(curency.format(produk[index]['harga']))
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                        ),
+                      ),
+                      Divider(),
                       (yt!=null) ? 
                       MediaQuery.removePadding(
                         context: context,

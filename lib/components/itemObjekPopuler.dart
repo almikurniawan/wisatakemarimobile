@@ -49,6 +49,15 @@ class _ItemObjekPopulerState extends State<ItemObjekPopuler> {
                       .substring(0, 100))
                   : Text(_parseHtmlString(widget.data['deskripsi'])),
             ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.place, color: Colors.grey,),
+                  Text(widget.data['wilayah']),
+                ],
+              ),
+            ),
             Divider(),
             Align(
               alignment: Alignment.bottomRight,

@@ -21,6 +21,14 @@ class _ItemObjekState extends State<ItemObjek> {
 
   @override
   Widget build(BuildContext context) {
+    List<Icon> rating = [];
+    for(int i=1; i <= 5; i++){
+      if(widget.data['rating'].floor()>=i){
+        rating.add(Icon(Icons.star, color: Colors.yellow[700], size: 18,));
+      }else{
+        rating.add(Icon(Icons.star, size: 18));
+      }
+    }
     return InkWell(
       onTap: () {
         widget.onTap(widget.data);
@@ -64,6 +72,38 @@ class _ItemObjekState extends State<ItemObjek> {
                 children: [
                   Icon(Icons.category, color: Colors.grey,),
                   Text(widget.data['kategori']['nama_kategori']),
+                ],
+              ),
+            ),
+            Divider(),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.remove_red_eye, color: Colors.grey,),
+                      Text(widget.data['number'].toString()+" Dilihat", style: TextStyle(fontWeight: FontWeight.bold),)
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Column(
+                        children: [
+                          Row(
+                            children: rating,
+                          ),
+                          (widget.data['rating'].floor()>=4) ? Text("Sangat Baik") : Text("Baik")
+                        ],
+                      ),
+                      Container(
+                        color: Colors.blue,
+                        padding:const EdgeInsets.all(8),
+                        child: Text(widget.data['rating'].toString(), style: TextStyle(color: Colors.white),),
+                      )
+                    ],
+                  ),
                 ],
               ),
             ),
