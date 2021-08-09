@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 class SliderBanner extends StatefulWidget {
   final dynamic item;
   final ValueSetter<dynamic> onTap;
-  const SliderBanner({ Key key, this.item, this.onTap }) : super(key: key);
+  final int index;
+  const SliderBanner({ Key key, this.item, this.onTap, this.index }) : super(key: key);
 
   @override
   _SliderBannerState createState() => _SliderBannerState();
@@ -41,11 +42,16 @@ class _SliderBannerState extends State<SliderBanner> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Image(
+                        image : NetworkImage('https://wisatakemari.com/public/images/wilayah/'+widget.item['icon_logo']),
+                        height: 60,
+                      ),
                       Text(widget.item['label'],
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.bold)),
+                      (widget.index>1) ? 
                       ElevatedButton(
                           child: Text(
                             "Selengkapnya",
@@ -63,7 +69,18 @@ class _SliderBannerState extends State<SliderBanner> {
                                   RoundedRectangleBorder(
                                 borderRadius:
                                     BorderRadius.circular(18.0),
-                              ))))
+                              )))) : Container(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 100),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(Icons.arrow_back, color: Colors.white),
+                            Icon(Icons.slideshow, color: Colors.white),
+                            Icon(Icons.arrow_forward, color: Colors.white),
+                          ],
+                        ),
+                      )
                     ],
                   ),
                 ),

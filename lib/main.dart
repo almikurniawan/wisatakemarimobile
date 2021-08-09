@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:here_sdk/core.dart';
 import 'home.dart';
 
 void main() {
+  SdkContext.init(IsolateOrigin.main);
   runApp(MyApp());
 }
 

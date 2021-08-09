@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
-import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
 import 'components/itemObjekMapObjek.dart';
 import 'config/app.dart';
@@ -15,7 +13,10 @@ class Pencarian extends StatefulWidget {
   final int selectedKategori;
   final String valueWilayahString;
   final String search;
-  const Pencarian({ Key key , this.selectedWilayah, this.selectedKategori, this.valueWilayahString, this.search}) : super(key: key);
+  final String selectedKategoriString;
+  final String iconWilayah;
+  final String gambarWilayah;
+  const Pencarian({ Key key , this.selectedWilayah, this.selectedKategori, this.valueWilayahString, this.search, this.selectedKategoriString, this.iconWilayah, this.gambarWilayah}) : super(key: key);
 
   @override
   _PencarianState createState() => _PencarianState();
@@ -31,8 +32,11 @@ class _PencarianState extends State<Pencarian> {
   String selectedUrutan;
   int selectedWilayah;
   int selectedKategori;
+  String selectedKategoriString;
   String valueWilayahString;
-  bool collapseFilter = true;
+  String iconWilayah;
+  String gambarWilayah;
+  bool collapseFilter = false;
   int currentPage = 1;
   int totalPage = 1;
   TextEditingController searchController = TextEditingController();
@@ -83,6 +87,9 @@ class _PencarianState extends State<Pencarian> {
     selectedWilayah = widget.selectedWilayah;
     valueWilayahString = widget.valueWilayahString;
     searchController.text = widget.search;
+    selectedKategoriString = widget.selectedKategoriString;
+    iconWilayah = widget.iconWilayah;
+    gambarWilayah = widget.gambarWilayah;
     this.getKategori();
     this.getWilayah();
     this.getObjek();
@@ -103,7 +110,7 @@ class _PencarianState extends State<Pencarian> {
         });
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+
     });
   }
 
@@ -119,14 +126,15 @@ class _PencarianState extends State<Pencarian> {
           Map<String, dynamic> item = {
             'id': value['id'],
             'label': value['kabupaten'],
-            'logo': value['logo'],
+            'logo': value['gambar'],
+            'icon_logo' : value['icon_logo']
           };
           return wilayahs.add(item);
         });
         setState(() {});
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      
     });
   }
 
@@ -134,6 +142,8 @@ class _PencarianState extends State<Pencarian> {
     setState(() {
       objeks = [];
       markers = [];
+      selectedRating = [];
+      selectedUrutan = "";
       selectedWilayah = 0;
       selectedKategori = 0;
       searchController.text = "";
@@ -232,27 +242,26 @@ class _PencarianState extends State<Pencarian> {
 
   @override
   Widget build(BuildContext context) {
+    String judul = "List Objek";
+    String kategoriSelected = "";
+    if(selectedKategoriString!=""){
+      kategoriSelected = "Kategori " + selectedKategoriString ;
+    }
+    if(valueWilayahString!=""){
+      kategoriSelected = kategoriSelected + "\nDi " + valueWilayahString;
+    }
+    if(kategoriSelected!=""){
+      judul = kategoriSelected;
+    }
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("WISATA",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold)),
-            Icon(Icons.photo_camera, size: 20, color: Colors.white),
-            Text("KEMARI",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold)),
-          ],
+        title: Image(
+          image: AssetImage("assets/images/logo.png"),
+          height: 35,
         ),
         backgroundColor: Colors.transparent,
-        elevation: 0.0,
+        elevation: 1,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -263,21 +272,25 @@ class _PencarianState extends State<Pencarian> {
             mainAxisSize: MainAxisSize.max,
             children: [
               Container(
-                height: 150,
+                height: 300,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   image: DecorationImage(
-                    image: AssetImage("assets/images/bg-objek.jpg"),
+                    image: NetworkImage(gambarWilayah),
                     colorFilter: new ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.dstATop),
                     fit: BoxFit.cover,
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Text("LIST OBJEK", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image(image: NetworkImage('https://wisatakemari.com/public/images/wilayah/'+iconWilayah), height: 60,),
+                      Text(judul, style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -296,7 +309,7 @@ class _PencarianState extends State<Pencarian> {
                     children: [
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.white,
+                          primary: Colors.red[300],
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
@@ -314,39 +327,13 @@ class _PencarianState extends State<Pencarian> {
                         },
                         child: Row(
                           children: [
-                            Icon(Icons.place, color: Colors.grey,),
+                            Icon(Icons.place, color: Colors.white,),
                             Text((showMap == 1)
                                   ? "Hide mini map"
-                                  : "View on mini map", style: TextStyle(color: Colors.grey),),
+                                  : "View on mini map", style: TextStyle(color: Colors.white),),
                           ],
                         ),
                       ),
-                      SizedBox(width: 10,),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.white,
-                          onPrimary: Colors.white,
-                        ),
-                        onPressed: () {
-                          int show = (showMap == 2) ? 0 : 2;
-                          setState(() {
-                            showMap = show;
-                          });
-                          if(show>0){
-                            mapControoler.onReady.whenComplete((){
-                              if(objeks.isNotEmpty){
-                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
-                              }
-                            });
-                          }
-                        },
-                        child: Row(
-                          children: [
-                            Icon(Icons.place, color: Colors.grey,),
-                            Text((showMap==2) ? "Hide full map" : "View on full map", style: TextStyle(color: Colors.grey),),
-                          ],
-                        ),
-                      )
                     ],
                   ),
                 ),
@@ -424,23 +411,36 @@ class _PencarianState extends State<Pencarian> {
                                 Text("Kabupaten / Kota", style: TextStyle(fontWeight: FontWeight.w600)),
                                 Padding(
                                   padding: const EdgeInsets.only(top: 5),
-                                  child: AutoCompleteComponent(
-                                    label: "Kemana?",
-                                    icon: Icon(Icons.place),
-                                    options: wilayahs,
-                                    value: valueWilayahString,
-                                    onSelect: (selection) {
+                                  child: 
+                                  DropdownButtonFormField(
+                                    decoration: InputDecoration(
+                                      hintText: 'Kemana?',
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: new OutlineInputBorder(
+                                        borderSide: BorderSide.none,
+                                        borderRadius: const BorderRadius.all(
+                                          const Radius.circular(10.0),
+                                        ),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                    ),
+                                    items: wilayahs.map((dynamic item) {
+                                      return DropdownMenuItem(
+                                        value: item['id'].toString()+'::'+item['label']+'::'+item['logo']+'::'+item['icon_logo'],
+                                        child: Text( (item['id']==0) ? "Semua Wilayah" : item['label']),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      List<String> newValue = value.split("::");
                                       setState(() {
-                                        selectedWilayah = selection['id'];
-                                        valueWilayahString = selection['label'];
+                                        selectedWilayah = int.parse(newValue[0]);
+                                        valueWilayahString = newValue[1];
+                                        gambarWilayah = newValue[2];
+                                        iconWilayah = newValue[3];
                                       });
                                     },
-                                    onChange: (value) {
-                                      setState(() {
-                                        selectedWilayah = 0;
-                                        valueWilayahString = value;
-                                      });
-                                    }),
+                                  ),
                                 ),
                                 Divider(
                                   color: Colors.grey[300],
@@ -580,6 +580,7 @@ class _PencarianState extends State<Pencarian> {
                                         currentPage = 1;
                                         objeks = [];
                                         markers = [];
+                                        collapseFilter = false;
                                       });
                                       this.getObjek();
                                     },

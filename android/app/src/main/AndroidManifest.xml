@@ -19,11 +19,18 @@
     </queries>
     
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
    <application
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:label="wisatakemari"
         android:icon="@mipmap/ic_launcher">
+        
+        <meta-data android:name="com.here.sdk.access_key_id" android:value="dNTz9L2_gZmhvWvGr0ACqg"/>
+        <meta-data android:name="com.here.sdk.access_key_secret" android:value="YVZa5QBbyrlw2_YLg4fR5SLwi8KlCIht4VPvJgc4Dob6uWr_epa_umyD6MXNqHgKSY71AmmHJGGZ23IqqkJp0A"/>
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

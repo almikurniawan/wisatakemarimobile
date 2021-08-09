@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:wisatakemari/components/itemObjekMapObjek.dart';
-import 'components/autoComplete.dart';
 import 'components/itemObjek.dart';
 import 'config/app.dart';
 import 'detailObjek.dart';
@@ -30,6 +29,8 @@ class _ObjekWisataState extends State<ObjekWisata> {
   String selectedUrutan;
   int selectedWilayah;
   String selectedWilayahString;
+  String iconWilayah;
+  String gambarWilayah;
   bool collapseFilter = false;
   int currentPage = 1;
   int totalPage = 1;
@@ -43,6 +44,8 @@ class _ObjekWisataState extends State<ObjekWisata> {
   void initState() {
     super.initState();
     selectedWilayahString = "";
+    iconWilayah = "pacitan.png";
+    gambarWilayah = "https://wisatakemari.com/public/images/wilayah/20210719074008_5.jpg";
     markers = [];
     selectedRating = [];
     urutkans = [
@@ -121,7 +124,8 @@ class _ObjekWisataState extends State<ObjekWisata> {
           Map<String, dynamic> item = {
             'id': value['id'],
             'label': value['kabupaten'],
-            'logo': value['logo'],
+            'logo': value['gambar'],
+            'icon_logo' : value['icon_logo']
           };
           return wilayahs.add(item);
         });
@@ -253,6 +257,8 @@ class _ObjekWisataState extends State<ObjekWisata> {
       kategoris = kategoriNew;
       objeks = [];
       markers = [];
+      selectedRating = [];
+      selectedUrutan = "";
       selectedWilayah = 0;
       currentPage = 1;
     });
@@ -261,7 +267,7 @@ class _ObjekWisataState extends State<ObjekWisata> {
 
   @override
   Widget build(BuildContext context) {
-    String judul = "List Objek";
+    String judul = "Kabupaten Pacitan";
     String kategoriSelected = "";
     kategoris.forEach((element) {
       if(element['checked']){
@@ -280,21 +286,9 @@ class _ObjekWisataState extends State<ObjekWisata> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("WISATA",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-            Icon(Icons.photo_camera, size: 20, color: Colors.white),
-            Text("KEMARI",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ],
+        title: Image(
+          image: AssetImage("assets/images/logo.png"),
+          height: 35,
         ),
         backgroundColor: Colors.transparent,
         elevation: 1,
@@ -308,27 +302,25 @@ class _ObjekWisataState extends State<ObjekWisata> {
             mainAxisSize: MainAxisSize.max,
             children: [
               Container(
-                height: 150,
+                height: 300,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   image: DecorationImage(
-                    image: AssetImage("assets/images/bg-objek.jpg"),
-                    colorFilter: new ColorFilter.mode(
-                        Colors.black.withOpacity(0.3), BlendMode.dstATop),
+                    image: NetworkImage(gambarWilayah),
+                    colorFilter: new ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.dstATop),
                     fit: BoxFit.cover,
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Align(
-                      alignment: Alignment.center,
-                      child: Text(judul,
-                          maxLines: 4,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold))),
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image(image: NetworkImage('https://wisatakemari.com/public/images/wilayah/'+iconWilayah), height: 60,),
+                      Text(judul, style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -374,40 +366,6 @@ class _ObjekWisataState extends State<ObjekWisata> {
                           ],
                         ),
                       ),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.red[300],
-                          onPrimary: Colors.white,
-                        ),
-                        onPressed: () {
-                          int show = (showMap == 2) ? 0 : 2;
-                          setState(() {
-                            showMap = show;
-                          });
-                          if(show>0){
-                            mapControoler.onReady.whenComplete((){
-                              if(objeks.isNotEmpty){
-                                mapControoler.move(LatLng(double.parse(objeks[0]['latitude']), double.parse(objeks[0]['longitude'])), 13.0);
-                              }
-                            });
-                          }
-                        },
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.place,
-                              color: Colors.white,
-                            ),
-                            Text(
-                              (showMap==2) ? "Hide full map" : "View on full map",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      )
                     ],
                   ),
                 ),
@@ -471,21 +429,36 @@ class _ObjekWisataState extends State<ObjekWisata> {
                                               fontWeight: FontWeight.w600)),
                                       Padding(
                                         padding: const EdgeInsets.only(top: 5),
-                                        child: AutoCompleteComponent(
-                                            label: "Kemana?",
-                                            icon: Icon(Icons.place),
-                                            options: wilayahs,
-                                            onSelect: (selection) {
-                                              setState(() {
-                                                selectedWilayah =
-                                                    selection['id'];
-                                              });
-                                            },
-                                            onChange: (value) {
-                                              setState(() {
-                                                selectedWilayah = 0;
-                                              });
-                                            }),
+                                        child: 
+                                        DropdownButtonFormField(
+                                          decoration: InputDecoration(
+                                            hintText: 'Kemana?',
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            border: new OutlineInputBorder(
+                                              borderSide: BorderSide.none,
+                                              borderRadius: const BorderRadius.all(
+                                                const Radius.circular(10.0),
+                                              ),
+                                            ),
+                                            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                          ),
+                                          items: wilayahs.map((dynamic item) {
+                                            return DropdownMenuItem(
+                                              value: item['id'].toString()+'::'+item['label']+'::'+item['logo']+'::'+item['icon_logo'],
+                                              child: Text( (item['id']==0) ? "Semua Wilayah" : item['label']),
+                                            );
+                                          }).toList(),
+                                          onChanged: (value) {
+                                            List<String> newValue = value.split("::");
+                                            setState(() {
+                                              selectedWilayah = int.parse(newValue[0]);
+                                              selectedWilayahString = newValue[1];
+                                              gambarWilayah = newValue[2];
+                                              iconWilayah = newValue[3];
+                                            });
+                                          },
+                                        ),
                                       ),
                                       Divider(
                                         color: Colors.grey[300],
@@ -644,6 +617,7 @@ class _ObjekWisataState extends State<ObjekWisata> {
                                                 currentPage = 1;
                                                 objeks = [];
                                                 markers = [];
+                                                collapseFilter = false;
                                               });
                                               this.getObjek();
                                             },

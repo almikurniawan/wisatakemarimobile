@@ -1,6 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:wisatakemari/about.dart';
 import 'package:wisatakemari/addUsulan.dart';
+import 'package:wisatakemari/youtube.dart';
 
 import 'homeContent.dart';
 import 'objekWisata.dart';
@@ -47,6 +49,30 @@ class _HomeState extends State<Home> {
                           value = 0;
                         });
                         Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return Youtube();
+                        }));
+                      },
+                      title: Text("Video 360"),
+                      leading: Icon(Icons.videocam_sharp),
+                    ),
+                    ListTile(
+                      onTap: () {
+                        setState(() {
+                          value = 0;
+                        });
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return About();
+                        }));
+                      },
+                      title: Text("Tentang Kami"),
+                      leading: Icon(Icons.place),
+                    ),
+                    ListTile(
+                      onTap: () {
+                        setState(() {
+                          value = 0;
+                        });
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
                           return AddUsulan();
                         }));
                       },
@@ -78,6 +104,30 @@ class _HomeState extends State<Home> {
                       },
                       title: Text("Objek"),
                       leading: Icon(Icons.place),
+                    ),
+                    ListTile(
+                      onTap: () {
+                        setState(() {
+                          value = 0;
+                        });
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return Youtube();
+                        }));
+                      },
+                      title: Text("Video 360"),
+                      leading: Icon(Icons.videocam_sharp),
+                    ),
+                    ListTile(
+                      onTap: () {
+                        setState(() {
+                          value = 0;
+                        });
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return About();
+                        }));
+                      },
+                      title: Text("Tentang Kami"),
+                      leading: Icon(Icons.person),
                     ),
                 ],
               );

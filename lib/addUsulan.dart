@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 
 import 'config/app.dart';
@@ -43,7 +42,7 @@ class _AddUsulanState extends State<AddUsulan> {
         });
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      
     });
   }
 
@@ -68,10 +67,10 @@ class _AddUsulanState extends State<AddUsulan> {
           deskripsi.text = "";
           objek.text = "";
         });
-        Toast.show("Berhasil Mengusulkan Objek.", context);        
+        
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      
     });
   }
 

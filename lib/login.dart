@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:toast/toast.dart';
 import 'config/app.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -94,7 +93,7 @@ class _LoginState extends State<Login> {
         if (result['status'] == 'success') {
           this.saveToken(result['api_key']);
         } else {
-          Toast.show("Username dan Password salah", context, duration: 10000);
+          
         }
       }
     });

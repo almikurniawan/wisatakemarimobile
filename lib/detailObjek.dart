@@ -4,9 +4,9 @@ import "package:intl/intl.dart";
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wisatakemari/routeNavigation.dart';
 import 'config/app.dart';
 
 class DetailObjek extends StatefulWidget {
@@ -26,6 +26,7 @@ class _DetailObjekState extends State<DetailObjek> {
   List produk;
   Future<void> _launched;
   bool isLoading;
+  List rangeBiaya = [];
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _DetailObjekState extends State<DetailObjek> {
     super.initState();
     isLoading = true;
     this.getData(widget.id);
+    this.getDataBiaya(widget.id);
   }
 
   Future<void> getData(int id) async{
@@ -53,7 +55,23 @@ class _DetailObjekState extends State<DetailObjek> {
         });
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+    });
+  }
+
+  Future<void> getDataBiaya(int id) async{
+    Map<String, dynamic> queryString = new Map<String, dynamic>();
+    queryString['id'] = id.toString();
+    var urlApi = Uri.https(Config().urlApi, '/public/api/range_biaya', queryString);
+
+    http.get(urlApi).then((http.Response response) {
+      if (response.statusCode == 401) {
+        // logout(context);
+      } else {
+        Map<String, dynamic> result = json.decode(response.body);
+        setState(() {
+          rangeBiaya = result['data'];
+        });
+      }
     });
   }
 
@@ -68,14 +86,35 @@ class _DetailObjekState extends State<DetailObjek> {
     }
   }
 
+  List<Widget> rangeComponent(){
+    NumberFormat curency = new NumberFormat.currency(locale: "id_ID", symbol: "Rp. ");
+    List<Widget> component = [];
+    rangeBiaya.forEach((element) {
+      component.add(
+        Column(
+          children: [
+            Wrap(
+              direction: Axis.horizontal,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              children: [
+                Text(element['nama_kategori'], style: TextStyle(fontWeight: FontWeight.bold),),
+                Text(" Mulai Dari Rp. "),
+                Text(curency.format(element['min']), style: TextStyle(color: Colors.red[300])),
+                Text(" Hingga Rp. "),
+                Text(curency.format(element['max']), style: TextStyle(color: Colors.red[300])),
+              ],
+            ),
+            Divider()
+          ],
+        )
+      );
+    });
+    print(component);
+    return component;
+  }
+
   @override
   Widget build(BuildContext context) {
-    var points = <LatLng>[
-      LatLng(-7.812919, 112.014614),
-      LatLng(-7.502919, 112.204614),
-      LatLng(-7.302919, 112.404614),
-    ];
-
     List<Icon> rating = [];
     if(!isLoading){
       for(int i=1; i <= 5; i++){
@@ -90,21 +129,9 @@ class _DetailObjekState extends State<DetailObjek> {
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("WISATA",
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold)),
-              Icon(Icons.photo_camera, size: 20, color: Colors.white),
-              Text("KEMARI",
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold)),
-            ],
+          title: Image(
+            image: AssetImage("assets/images/logo.png"),
+            height: 35,
           ),
           backgroundColor: Colors.transparent,
           elevation: 1,
@@ -236,6 +263,10 @@ class _DetailObjekState extends State<DetailObjek> {
                           ),
                         ),
                         onPressed: () {
+                          Navigator.push(context,
+                            MaterialPageRoute(builder: (context) {
+                              return RouteNavigation(latitute: double.parse(dataObjek['latitude']), longitude: double.parse(dataObjek['longitude']),);
+                            }));
                         },
                         child: Text("Rute ke Lokasi"),
                       ),
@@ -266,6 +297,17 @@ class _DetailObjekState extends State<DetailObjek> {
                           ),
                         ),
                         onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              contentPadding: const EdgeInsets.all(0),
+                              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 150),
+                              title: Text("Range Biaya di "+dataObjek['nama'], style: TextStyle(fontWeight: FontWeight.bold),),
+                              content: Column(
+                                children: this.rangeComponent(),
+                              )
+                            ),
+                          );
                         },
                         child: Text("Range Biaya"),
                       ),
@@ -327,21 +369,20 @@ class _DetailObjekState extends State<DetailObjek> {
                                 showDialog(context: context, builder: (context){
                                   return AlertDialog(
                                     contentPadding: const EdgeInsets.all(0),
-                                    content: InteractiveViewer(
-                                      panEnabled: true, // Set it to false to prevent panning. 
-                                      boundaryMargin: EdgeInsets.all(80),
-                                      minScale: 0.5,
-                                      maxScale: 4, 
-                                      child: Image(
-                                        image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
-                                        ),
+                                    content: 
+                                    Image(
+                                      image: NetworkImage(
+                                        'https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
                                       ),
                                     )
                                   );
                                 });
                               },
-                              child: Image(
-                                image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Image(
+                                  image: NetworkImage('https://wisatakemari.com/public/images/'+dataObjek['objek_gambar'][index]['gambar']
+                                  ),
                                 ),
                               ),
                             ) 
@@ -381,20 +422,12 @@ class _DetailObjekState extends State<DetailObjek> {
                                   height: 80.0,
                                   point: LatLng(double.parse(dataObjek['latitude']), double.parse(dataObjek['longitude'])),
                                   builder: (ctx) => Container(
-                                    child: Icon(Icons.place),
+                                    child: Icon(Icons.place, color : Colors.red, size : 20),
                                   ),
                                 ),
                               ],
                             ) :
                             MarkerLayerOptions(),
-                            PolylineLayerOptions(
-                              polylines: [
-                                Polyline(
-                                    points: points,
-                                    strokeWidth: 4.0,
-                                    color: Colors.purple),
-                              ],
-                            ),
                           ],
                         ),
                       ),
@@ -432,7 +465,6 @@ class _DetailObjekState extends State<DetailObjek> {
                                           Image(
                                             image: NetworkImage(
                                               produk[index]['url_gambar']
-                                              // 'https://wisatakemari.com/public/images/produk/deluxe1.jpg'
                                             ),
                                           ),
                                         ],
@@ -449,7 +481,6 @@ class _DetailObjekState extends State<DetailObjek> {
                                       width: MediaQuery.of(context).size.width * 0.3,
                                       image: NetworkImage(
                                         produk[index]['url_gambar']
-                                        // 'https://wisatakemari.com/public/images/produk/deluxe1.jpg'
                                       ),
                                     ),
                                     Padding(
@@ -482,44 +513,6 @@ class _DetailObjekState extends State<DetailObjek> {
                           }
                         ),
                       ) : Container(),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: MediaQuery.removePadding(
-                          context: context,
-                          removeTop: true,
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-                            itemCount: sosialmedia.length,
-                            itemBuilder: (context, index){
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Wrap(
-                                  children: [
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        icon: Icon(Icons.account_circle),
-                                        style: ElevatedButton.styleFrom(
-                                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                                          primary: Colors.red[300],
-                                          onPrimary: Colors.white,
-                                        ),
-                                        onPressed: () {
-                                          _launched = _launchInBrowser(sosialmedia[index]['url']);
-                                        },
-                                        label: Text(sosialmedia[index]['nama']),
-
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          )
-                        ),
-                      ),
                     ],
                   ),
                 ),

@@ -9,11 +9,9 @@ import 'package:wisatakemari/components/listWilayah.dart';
 import 'package:wisatakemari/components/slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wisatakemari/pencarian.dart';
-import 'components/autoComplete.dart';
 import 'config/app.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:toast/toast.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'detailObjek.dart';
@@ -49,12 +47,32 @@ class _HomeContentState extends State<HomeContent>{
   ];
   List kategoris = [];
   List<Map<String, dynamic>> wilayahs = [{
-    "label" : "Kota Kediri",
-    "logo" : "https://wisatakemari.com/public/images/wilayah/20210719074355_2.jpg"
-  }];  
+    "id" : -1,
+    "label" : "SELAMAT DATANG DI WISATA KEMARI",
+    "logo" : "https://wisatakemari.com/public/images/bg/bg-1.jpg",
+    "icon_logo" : "logoputih.png"
+  },
+  {
+    "id" : 0,
+    "label" : "Kota / Kabupaten",
+    "logo" : "https://wisatakemari.com/public/images/bg/bg-2.jpg",
+    "icon_logo" : "logoputih.png"
+  }
+  ];
+  List<Map<String, dynamic>> wilayahsKabupaten = [
+    {
+      "id" : 0,
+      "label" : "Kota / Kabupaten",
+      "logo" : "https://wisatakemari.com/public/images/bg/bg-2.jpg",
+      "icon_logo" : "logoputih.png"
+    }
+  ];
   int selectedKategori = 0;
+  String selectedKategoriString = "";
   int selectedWilayah = 0;
   String valueWilayahString = "";
+  String iconWilayah = "";
+  String gambarWilayah = "";
   int openDrawer = 0;
   int selectedSlide = 0;
   bool isLogin = false;
@@ -131,7 +149,7 @@ class _HomeContentState extends State<HomeContent>{
       dynamic result = json.decode(response.body);
       this.saveSession(result, userGoogle.displayName);
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
+      // Toast.show(error.toString(), context);
     });
   }
 
@@ -170,7 +188,6 @@ class _HomeContentState extends State<HomeContent>{
         });
       }
     }).onError((error, stackTrace) {
-      Toast.show(error.toString(), context);
     });
   }
 
@@ -308,16 +325,18 @@ class _HomeContentState extends State<HomeContent>{
         // logout(context);
       } else {
         Map<String, dynamic> result = json.decode(response.body);
-        wilayahs = [];
         result['data'].forEach((value) {
           Map<String, dynamic> item = {
             'id': value['id'],
             'label': value['kabupaten'],
             'logo': value['gambar'],
+            'icon_logo' : value['icon_logo']
           };
+          wilayahsKabupaten.add(item);
           return wilayahs.add(item);
         });
-        setState(() {});
+        setState(() {
+        });
       }
     }).onError((error, stackTrace) {
       // Toast.show(error.toString(), context);
@@ -326,7 +345,6 @@ class _HomeContentState extends State<HomeContent>{
 
   @override
   Widget build(BuildContext context) {
-    // print(objeksAll);
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -342,21 +360,9 @@ class _HomeContentState extends State<HomeContent>{
                   },
                   color: Colors.white,
                 ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("WISATA",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold)),
-            Icon(Icons.photo_camera, size: 20, color: Colors.white),
-            Text("KEMARI",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold)),
-          ],
+        title: Image(
+          image: AssetImage("assets/images/logo.png"),
+          height: 35,
         ),
         actions: [
           (!isLogin)
@@ -402,6 +408,7 @@ class _HomeContentState extends State<HomeContent>{
               itemBuilder: (context, index, realIdx){
                 return SliderBanner(
                   item: wilayahs[index],
+                  index : index,
                   onTap: (dynamic value){
                     Navigator.push(context, MaterialPageRoute(builder: (context){
                       return ObjekWisata(idWilayah: value['id'], namaWilayah: value['label'], selectedKategori : []);
@@ -449,30 +456,6 @@ class _HomeContentState extends State<HomeContent>{
                     SizedBox(
                       width: 10,
                     ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        primary: Colors.red[300],
-                        onPrimary: Colors.white,
-                      ),
-                      onPressed: () {
-                        int show = (showMap == 2) ? 0 : 2;
-                        setState(() {
-                          showMap = show;
-                        });
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.place,
-                            color: Colors.white,
-                          ),
-                          Text(
-                            (showMap==2) ? "Hide full map" : "View on full map",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    )
                   ],
                 ),
               ),
@@ -520,22 +503,36 @@ class _HomeContentState extends State<HomeContent>{
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: AutoCompleteComponent(
-                        label: "Kemana?",
-                        icon: Icon(Icons.place),
-                        options: wilayahs,
-                        value: valueWilayahString,
-                        onSelect: (selection) {
-                          setState(() {
-                            selectedWilayah = selection['id'];
-                          });
-                        },
-                        onChange: (value) {
-                          setState(() {
-                            selectedWilayah = 0;
-                            valueWilayahString = value;
-                          });
-                        }),
+                    child: 
+                    DropdownButtonFormField(
+                      decoration: InputDecoration(
+                        hintText: 'Kemana?',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: new OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(10.0),
+                          ),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      ),
+                      items: wilayahsKabupaten.map((dynamic item) {
+                        return DropdownMenuItem(
+                          value: item['id'].toString()+'::'+item['label']+'::'+item['logo']+'::'+item['icon_logo'],
+                          child: Text( (item['id']==0) ? "Semua Wilayah" : item['label']),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        List<String> newValue = value.split("::");
+                        setState(() {
+                          selectedWilayah = int.parse(newValue[0]);
+                          valueWilayahString = newValue[1];
+                          gambarWilayah = newValue[2];
+                          iconWilayah = newValue[3];
+                        });
+                      },
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -554,13 +551,15 @@ class _HomeContentState extends State<HomeContent>{
                       ),
                       items: kategoris.map((dynamic item) {
                         return DropdownMenuItem(
-                          value: item['id_kategori'],
+                          value: item['id_kategori'].toString()+'::'+item['nama_kategori'],
                           child: Text(item['nama_kategori']),
                         );
                       }).toList(),
                       onChanged: (value) {
+                        List<String> newValue = value.split("::");
                         setState(() {
-                          selectedKategori = value;
+                          selectedKategori = int.parse(newValue[0]);
+                          selectedKategoriString = newValue[1];
                         });
                       },
                     ),
@@ -576,13 +575,15 @@ class _HomeContentState extends State<HomeContent>{
                           onPrimary: Colors.white,
                         ),
                         onPressed: () {
-                          // this.getObjekAll();
                           Navigator.push(context,
                               MaterialPageRoute(builder: (context) {
                             return Pencarian(
                               selectedKategori: selectedKategori,
                               selectedWilayah: selectedWilayah,
                               valueWilayahString: valueWilayahString,
+                              selectedKategoriString : selectedKategoriString,
+                              iconWilayah : iconWilayah,
+                              gambarWilayah : gambarWilayah,
                               search: searchController.text,
                             );
                           }));
@@ -670,6 +671,29 @@ class _HomeContentState extends State<HomeContent>{
                 ],
               ),
             ),
+            Container(
+              color: Colors.black87,
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 30, left: 8, right: 8, bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Copyright © wisatakemari.com", style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    Row(
+                      children: [
+                        Text("Supported by ", style: TextStyle(color: Colors.white70, fontSize: 16)),
+                        Image(
+                          image: AssetImage('assets/images/logobiputih.png'),
+                          color: Colors.white70,
+                          height: 40,
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            )
           ],
         ),
       ),
